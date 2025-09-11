@@ -31,6 +31,16 @@ class Produto:
         self.categoria = categoria
 
 
+    def remover_estoque(self, quantidade):
+        if quantidade <= self.quantidade_estoque:
+            self.quantidade_estoque -= quantidade
+            print(f'Estoque do produto "{self.nome}" atualizado para {self.quantidade_estoque}')
+            return True
+        else:
+            print(f'Tentativa de remover {quantidade} do produto "{self.nome}" falhou. Estoque insuficiente!')
+            return False
+
+
 
 class ItemVenda:
     """Representa uma linha de item dentro de uma Venda completa."""
