@@ -77,7 +77,7 @@ class Venda:
             quantidade (int): A quantidade de unidades a ser adicionada.
         """
         # Cria um novo objeto ItemVenda para representar esta linha de transação
-        novo_item = ItemVenda(produto, quantidade)
+        novo_item = ItemVenda(quantidade=quantidade, produto=produto)
 
         # Adiciona o novo item à lista 'itens' da venda
         self.itens.append(novo_item)
