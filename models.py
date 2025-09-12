@@ -39,6 +39,13 @@ class Produto:
         else:
             print(f'Tentativa de remover {quantidade} do produto "{self.nome}" falhou. Estoque insuficiente!')
             return False
+        
+    def __str__(self):
+        # Dentro do método __str__
+        return f"{self.nome} [Estoque: {self.quantidade_estoque}] - R$ {self.preco:.2f}"
+    
+    def __repr__(self):
+        return self.__str__()
 
 
 
@@ -108,3 +115,26 @@ class Venda:
 
         # Atualiza o atributo 'valor_total' da venda com a soma calculada    
         self.valor_total = total
+
+class EstoqueCompleto:
+    def __init__(self):
+        self.produtos_por_categoria = {}
+
+    def adicionar_produto(self, produto: Produto):
+        categoria_nome = produto.categoria.nome
+        if categoria_nome not in self.produtos_por_categoria:
+            self.produtos_por_categoria[categoria_nome] = [produto]
+        else:
+            self.produtos_por_categoria[categoria_nome].append(produto)
+
+
+    def listar_produtos_por_categoria(self, categoria_nome: str):
+        """
+        Retorna uma lista de produtos de uma categoria especifica.
+        Se a categoria não for encontrada, retorna uma lista vazia
+        """
+        if categoria_nome in self.produtos_por_categoria:
+            return self.produtos_por_categoria[categoria_nome]
+        else:
+            return []
+        

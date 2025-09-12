@@ -1,4 +1,4 @@
-from models import Categoria, Produto, ItemVenda, Venda
+from models import Categoria, Produto, Venda, EstoqueCompleto
 
 # Criamos a nossa "etiqueta"
 cat_brincos = Categoria(nome='Brincos')
@@ -46,12 +46,22 @@ for item in venda1.itens:
     if sucesso_na_remocao:
         print(f'-> Baixa no estoque de "{item.produto.nome}" realizada!')
     else:
-        print(f'-> FALHA na baixa de esootuqe de "{item.produto.nome}". Estoque insuficiente!')
+        print(f'-> FALHA na baixa de estoque de "{item.produto.nome}". Estoque insuficiente!')
 
 print()
 
 print('Estoque final')
 print(f' - Estoque de "{produto1.nome}": {produto1.quantidade_estoque}')
 print(f' - Estoque de "{produto2.nome}": {produto2.quantidade_estoque}')
+
+print()
+
+estoque = EstoqueCompleto()
+estoque.adicionar_produto(produto1)
+estoque.adicionar_produto(produto2)
+
+print('Mostrando estoque completo')
+print(estoque.produtos_por_categoria)
+
 
 print('TESTES FINALIZADOS COM SUCESSO!')
