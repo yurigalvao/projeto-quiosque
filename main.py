@@ -65,3 +65,36 @@ print(estoque.produtos_por_categoria)
 
 
 print('TESTES FINALIZADOS COM SUCESSO!')
+
+print()
+print('Testes ')
+
+produto3 = Produto.from_string('Brinco-12-Brincos-10')
+print(produto3)
+
+try:
+    produto4 = Produto.from_string('Colar-30')
+except Exception:
+    print('Erro de atribuição de objeto')
+#produto3 = Produto(
+#   nome='Brinco',
+#   preco= 12.00,
+#   categoria= Categoria(nome='Brincos'),
+#   quantidade_estoque= 10
+#)
+
+#produto3.preco = 15
+#print(produto3)
+
+#try:
+#    produto3.preco = -2
+#except Exception:
+#    print('Valor inválido')
+
+#produto3.quantidade_estoque = 20
+#print(produto3.quantidade_estoque)
+
+#try:
+#    produto3.quantidade_estoque = -10
+#except Exception:
+#    print('Quantidade Inválida!')

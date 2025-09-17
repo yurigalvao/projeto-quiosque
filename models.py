@@ -26,8 +26,8 @@ class Produto:
             quantidade_estoque (int): A quantidade inicial de unidades em estoque.
         """
         self.nome = nome
-        self.preco = preco
-        self.quantidade_estoque = quantidade_estoque
+        self._preco = preco
+        self._quantidade_estoque = quantidade_estoque
         self.categoria = categoria
 
 
@@ -46,7 +46,41 @@ class Produto:
     
     def __repr__(self):
         return self.__str__()
+    
+    @classmethod
+    def from_string(cls, texto):
+        partes_produto = texto.split('-')
+        nome = partes_produto[0]
+        preco = float(partes_produto[1])
+        categoria = Categoria(partes_produto[2])
+        quantidade = int(partes_produto[3])
+        return cls(nome, preco, categoria, quantidade)
+    
+    @staticmethod
+    def formatar_moeda(valor):
+        return f'R${valor:.2f}'
+    
+    @property
+    def preco(self):
+        return self._preco
 
+    @preco.setter
+    def preco(self, novo_preco):
+        if novo_preco >= 0:
+            self._preco = novo_preco
+        else:
+            raise ValueError('O preço não pode ser negativo!')
+
+    @property
+    def quantidade_estoque(self):
+        return self._quantidade_estoque
+    
+    @quantidade_estoque.setter
+    def quantidade_estoque(self, valor):
+        if valor > 0:
+            self._quantidade_estoque = valor
+        else:
+            raise ValueError('Quantidade de estoque inválida!')
 
 
 class ItemVenda:
