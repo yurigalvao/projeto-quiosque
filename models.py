@@ -1,19 +1,22 @@
 from datetime import datetime
 from dataclasses import dataclass, field
 
-class EstoqueInsuficienteError(Exception):
+class InsufficientStockError(Exception):
     pass
 
 @dataclass
-class Categoria:
-    nome: str
+class Category:
+    name: str
 
     def __str__(self):
-        return f'{self.nome}'
+        return f'{self.name}'
+    
+    def __repr__(self):
+        return f"Category(name='{self.name}')"
 
-class Produto:
+class Product:
     """ Representa um item específico e vendável do estoque."""
-    def __init__(self, nome: str, preco: float, categoria: Categoria, quantidade_estoque: int):
+    def __init__(self, name: str, price: float, category: Category, stock_quantity: int):
         """
         Construtor da classe Produto.
 
@@ -23,92 +26,89 @@ class Produto:
             categoria (Categoria): O objeto da categoria à qual o produto pertence.
             quantidade_estoque (int): A quantidade inicial de unidades em estoque.
         """
-        self.nome = nome
-        self._preco = preco
-        self._quantidade_estoque = quantidade_estoque
-        self.categoria = categoria
+        self.name = name
+        self._price = price
+        self._stock_quantity = stock_quantity
+        self.category = category
 
-
-    def remover_estoque(self, quantidade):
-        if quantidade <= self.quantidade_estoque:
-            self.quantidade_estoque -= quantidade
-            print(f'Estoque do produto "{self.nome}" atualizado para {self.quantidade_estoque}')
-            return True
+    def remove_from_stock(self, quantity):
+        if quantity <= self.stock_quantity:
+            self.stock_quantity -= quantity
         else:
-            raise EstoqueInsuficienteError(f'Tentativa de remover {quantidade} do produto "{self.nome}" falhou. Estoque insuficiente!')
+            raise InsufficientStockError(f'Attempt to remove {quantity} from product "{self.name}" failed. Insufficient stock!')
         
     def __str__(self):
         # Dentro do método __str__
-        return f"{self.nome} [Estoque: {self.quantidade_estoque}] - R$ {self.preco:.2f}"
+        return f"{self.name} [Estoque: {self.stock_quantity}] - R$ {self.price:.2f}"
     
     def __repr__(self):
-        return self.__str__()
+        return f"Product(name='{self.name}', price={self.price}, category={self.category!r}, stock_quantity={self.stock_quantity})"
     
     @classmethod
-    def from_string(cls, texto):
-        partes_produto = texto.split('-')
-        nome = partes_produto[0]
-        preco = float(partes_produto[1])
-        categoria = Categoria(partes_produto[2])
-        quantidade = int(partes_produto[3])
-        return cls(nome, preco, categoria, quantidade)
+    def from_string(cls, text):
+        product_parts = text.split('-')
+        name = product_parts[0]
+        price = float(product_parts[1])
+        category = Category(product_parts[2])
+        quantity = int(product_parts[3])
+        return cls(name, price, category, quantity)
     
     @staticmethod
-    def formatar_moeda(valor):
-        return f'R${valor:.2f}'
+    def format_currency(value): #formatar moeda 
+        return f'R${value:.2f}'
     
     @property
-    def preco(self):
-        return self._preco
+    def price(self):
+        return self._price
 
-    @preco.setter
-    def preco(self, novo_preco):
-        if novo_preco >= 0:
-            self._preco = novo_preco
+    @price.setter
+    def price(self, new_price):
+        if new_price >= 0:
+            self._price = new_price
         else:
-            raise ValueError('O preço não pode ser negativo!')
+            raise ValueError('Price cannot be negative!')
 
     @property
-    def quantidade_estoque(self):
-        return self._quantidade_estoque
+    def stock_quantity(self):
+        return self._stock_quantity
     
-    @quantidade_estoque.setter
-    def quantidade_estoque(self, valor):
-        if valor > 0:
-            self._quantidade_estoque = valor
+    @stock_quantity.setter
+    def stock_quantity(self, value):
+        if value > 0:
+            self._stock_quantity = value
         else:
-            raise ValueError('Quantidade de estoque inválida!')
+            raise ValueError('Invalid stock quantity!')
 
 @dataclass
-class ItemVenda:
+class SaleItem:
     """Representa uma linha de item dentro de uma Venda completa."""
-    produto: Produto
-    quantidade: int
+    product: Product
+    quantity: int
     subtotal: float = field(init=False)
 
     def __post_init__(self):
-        self.subtotal = self.produto.preco * self.quantidade
+        self.subtotal = self.product.price * self.quantity
 
 
 
 
 
-class Venda:
+class Sale:
     """Representa uma transação completa, contendo um ou mais itens."""
     def __init__(self):
         """
         Contrutor da classe Venda. Inicia um 'carrinho de compras' novo.
         """
         # Registra o momento exato em que a venda foi criada
-        self.data_hora = datetime.now()
+        self.date_hour = datetime.now()
 
         # A lista de itens começa vazia. Ela guardará objetos da classe ItemVenda.
-        self.itens = []
+        self.items = []
 
         # O valor total da venda começa, logicamente, em zero.
-        self.valor_total = 0.0
+        self.total_value = 0.0
 
-    def adicionar_item(self, produto: Produto, quantidade: int):
+    def add_item(self, product: Product, quantity: int):
         """
         Adiciona um novo item (Produto e quantidade) à lista da venda.
         
@@ -117,55 +117,55 @@ class Venda:
             quantidade (int): A quantidade de unidades a ser adicionada.
         """
         # Cria um novo objeto ItemVenda para representar esta linha de transação
-        novo_item = ItemVenda(quantidade=quantidade, produto=produto)
+        new_item = SaleItem(quantity=quantity, product=product)
 
         # Adiciona o novo item à lista 'itens' da venda
-        self.itens.append(novo_item)
+        self.items.append(new_item)
 
         # Sempre que um novo item é adicionado, o valor total da venda é recalculado
-        self.atualizar_valor_total()
+        self.update_total_value()
 
-    def atualizar_valor_total(self):
+    def update_total_value(self):
         """
         Soma os subtotais de todos os itens na lista para obter o valor total da venda.
         Este método é chamado internamente sempre que um item é adicionado.
         """
         total = 0.0
         # Itera sobre cada objeto 'ItemVenda' na lista 'self.itens'
-        for item in self.itens:
+        for item in self.items:
             # Soma o subtotal de cada item à variável 'total'
             total += item.subtotal
 
         # Atualiza o atributo 'valor_total' da venda com a soma calculada    
-        self.valor_total = total
+        self.total_value = total
 
-    def finalizar_venda(self):
-            for item in self.itens:
+    def finish_sale(self):
+            for item in self.items:
                 try:
-                    item.produto.remover_estoque(item.quantidade)
-                except EstoqueInsuficienteError:
+                    item.product.remove_from_stock(item.quantity)
+                except InsufficientStockError:
                     print('Erro de estoque! Estoque insuficiente!')
 
 
-class EstoqueCompleto:
+class Stock:
     def __init__(self):
-        self.produtos_por_categoria = {}
+        self.products_by_category = {}
 
-    def adicionar_produto(self, produto: Produto):
-        categoria_nome = produto.categoria.nome
-        if categoria_nome not in self.produtos_por_categoria:
-            self.produtos_por_categoria[categoria_nome] = [produto]
+    def add_product(self, product: Product):
+        category_name = product.category.name
+        if category_name not in self.products_by_category:
+            self.products_by_category[category_name] = [product]
         else:
-            self.produtos_por_categoria[categoria_nome].append(produto)
+            self.products_by_category[category_name].append(product)
 
 
-    def listar_produtos_por_categoria(self, categoria_nome: str):
+    def list_products_by_category(self, category_name: str):
         """
         Retorna uma lista de produtos de uma categoria especifica.
         Se a categoria não for encontrada, retorna uma lista vazia
         """
-        if categoria_nome in self.produtos_por_categoria:
-            return self.produtos_por_categoria[categoria_nome]
+        if category_name in self.products_by_category:
+            return self.products_by_category[category_name]
         else:
             return []
         

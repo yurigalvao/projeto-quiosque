@@ -1,62 +1,62 @@
-from models import Categoria, Produto, Venda, EstoqueCompleto
+from models import Category, Product, Sale, Stock
 
 # Criamos a nossa "etiqueta"
-cat_brincos = Categoria(nome='Brincos')
+cat_brincos = Category(name='Brincos')
 #cat_teste = Categoria(nome='teste')
 
 #print(cat_teste)
-produto1 = Produto(
-    nome='Argola Simples',
-    preco=25.00,
-    categoria=cat_brincos,
-    quantidade_estoque=15
+produto1 = Product(
+    name='Argola Simples',
+    price=25.00,
+    category=cat_brincos,
+    stock_quantity=15
     )
 
-produto2 = Produto(
-    nome='Colar de Pérola',
-    preco=80.00,
-    categoria=Categoria(nome='Colares'),
-    quantidade_estoque=10
+produto2 = Product(
+    name='Colar de Pérola',
+    price=80.00,
+    category=Category(name='Colares'),
+    stock_quantity=10
     )
 
 
 
 
-venda1 = Venda()
-print(f'Carrinho criado. Valor total inicial: R${venda1.valor_total}')
+venda1 = Sale()
+print(f'Carrinho criado. Valor total inicial: R${venda1.total_value}')
 
-venda1.adicionar_item(produto=produto1, quantidade=2)
-print(f'Adicionando 2x "Argola Simples". Novo valor total: R${venda1.valor_total}')
+venda1.add_item(product=produto1, quantity=2)
+print(f'Adicionando 2x "Argola Simples". Novo valor total: R${venda1.total_value}')
 
-venda1.adicionar_item(produto=produto2, quantidade=1)
-print(f'Adicionando 1x "Colar de Pérolas". Novo valor total: R${venda1.valor_total}')
+venda1.add_item(product=produto2, quantity=1)
+print(f'Adicionando 1x "Colar de Pérolas". Novo valor total: R${venda1.total_value}')
 
 print()
 
 print('Resumo da venda')
-print(f'Valr total da venda: R${venda1.valor_total:.2f}')
+print(f'Valr total da venda: R${venda1.total_value:.2f}')
 print('Itens vendidos:')
-for item in venda1.itens:
-    print(f'{item.quantidade}x {item.produto.nome} (Subtotal: R$ {item.subtotal:.2f})')
+for item in venda1.items:
+    print(f'{item.quantity}x {item.product.name} (Subtotal: R$ {item.subtotal:.2f})')
 
 print()
 
 print('Finalizando a venda e atualizando o estoque')
-venda1.finalizar_venda()
+venda1.finish_sale()
 print()
 
 print('Estoque final')
-print(f' - Estoque de "{produto1.nome}": {produto1.quantidade_estoque}')
-print(f' - Estoque de "{produto2.nome}": {produto2.quantidade_estoque}')
+print(f' - Estoque de "{produto1.name}": {produto1.stock_quantity}')
+print(f' - Estoque de "{produto2.name}": {produto2.stock_quantity}')
 
 print()
 
-estoque = EstoqueCompleto()
-estoque.adicionar_produto(produto1)
-estoque.adicionar_produto(produto2)
+estoque = Stock()
+estoque.add_product(produto1)
+estoque.add_product(produto2)
 
 print('Mostrando estoque completo')
-print(estoque.produtos_por_categoria)
+print(estoque.products_by_category)
 
 
 print('TESTES FINALIZADOS COM SUCESSO!')
@@ -64,11 +64,11 @@ print('TESTES FINALIZADOS COM SUCESSO!')
 print()
 print('Testes ')
 
-produto3 = Produto.from_string('Brinco-12-Brincos-10')
+produto3 = Product.from_string('Brinco-12-Brincos-10')
 print(produto3)
 
 try:
-    produto4 = Produto.from_string('Colar-30')
+    produto4 = Product.from_string('Colar-30')
 except Exception:
     print('Erro de atribuição de objeto')
 #produto3 = Produto(
