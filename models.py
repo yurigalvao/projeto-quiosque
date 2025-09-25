@@ -1,17 +1,15 @@
 from datetime import datetime
+from dataclasses import dataclass, field
 
+class EstoqueInsuficienteError(Exception):
+    pass
+
+@dataclass
 class Categoria:
-    """ Representa uma categoria para agrupar produtos. Ex: Brincos, Colares."""
-    def __init__(self, nome: str):
-        """
-        Construtor da classe Categoria.
+    nome: str
 
-        Args:
-            nome (str): O nome da categoria a ser criada.
-        """
-        self.nome = nome
-
-
+    def __str__(self):
+        return f'{self.nome}'
 
 class Produto:
     """ Representa um item específico e vendável do estoque."""
@@ -37,8 +35,7 @@ class Produto:
             print(f'Estoque do produto "{self.nome}" atualizado para {self.quantidade_estoque}')
             return True
         else:
-            print(f'Tentativa de remover {quantidade} do produto "{self.nome}" falhou. Estoque insuficiente!')
-            return False
+            raise EstoqueInsuficienteError(f'Tentativa de remover {quantidade} do produto "{self.nome}" falhou. Estoque insuficiente!')
         
     def __str__(self):
         # Dentro do método __str__
@@ -82,25 +79,17 @@ class Produto:
         else:
             raise ValueError('Quantidade de estoque inválida!')
 
-
+@dataclass
 class ItemVenda:
     """Representa uma linha de item dentro de uma Venda completa."""
-    def __init__(self, quantidade: int, produto: Produto):
-        """
-        Construtor da classe ItemVenda.
+    produto: Produto
+    quantidade: int
+    subtotal: float = field(init=False)
 
-        Args:
-            quantidade (int): A quantidade de unidades vendadas deste produto.
-            produto (Produto): O objeto do produto que está sendo vendido.
-        """
-        # Guarda a quantidade de itens vendidos
-        self.quantidade = quantidade
+    def __post_init__(self):
+        self.subtotal = self.produto.preco * self.quantidade
 
-        # Gurada a referência para o objeto Produto completo.
-        self.produto = produto
 
-        # Calcula o subtotal automaticamente no momento da criação
-        self.subtotal = produto.preco * self.quantidade
 
 
 
@@ -149,6 +138,14 @@ class Venda:
 
         # Atualiza o atributo 'valor_total' da venda com a soma calculada    
         self.valor_total = total
+
+    def finalizar_venda(self):
+            for item in self.itens:
+                try:
+                    item.produto.remover_estoque(item.quantidade)
+                except EstoqueInsuficienteError:
+                    print('Erro de estoque! Estoque insuficiente!')
+
 
 class EstoqueCompleto:
     def __init__(self):
