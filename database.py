@@ -193,7 +193,13 @@ def registrar_venda(valor_total, itens):
     Registra uma nova venda na tabela vendas e ses respectivos
     itens na tabela itens_da_venda, itens deve ser uma lista
     """
-    pass
+    with sqlite3.connect(DB_FILE) as connection:
+        cursor = connection.cursor()
+        try:
+            return True
+        except sqlite3.Error as e:
+            return False
+
 
 if __name__ == '__main__':
     criar_tabelas()
