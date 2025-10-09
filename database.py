@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime
 
 # Definimos o nome do arquivo do banco de dados como uma constante
 DB_FILE = 'quiosque.db'
@@ -188,20 +189,64 @@ def atualizar_nome_produto(novo_nome, id_produto):
             return False
 
 # Funções de crud para vendas
-def registrar_venda(valor_total, itens):
+def registrar_venda(itens):
     """
-    Registra uma nova venda na tabela vendas e ses respectivos
+    Registra uma nova venda na tabela vendas e seus respectivos
     itens na tabela itens_da_venda, itens deve ser uma lista
     """
+    valor_total = 0
+    itens_para_registrar = []
+    data_hora_obj = datetime.now()
+    data_hora_str = data_hora_obj.strftime('%Y-%m-%d %H:%M:%S')
     with sqlite3.connect(DB_FILE) as connection:
         cursor = connection.cursor()
         try:
+            for (id_produto, quantidade) in itens:
+                cursor.execute("""
+                    SELECT preco FROM produtos WHERE id_produto = (?)
+                """, (id_produto,))
+                resultado_query = cursor.fetchone()
+                preco_unitario = resultado_query[0]
+                subtotal = preco_unitario * quantidade
+                valor_total += subtotal
+                itens_para_registrar.append((id_produto, quantidade, preco_unitario))
+
+            cursor.execute("""
+                INSERT INTO vendas (data_hora, valor_total) VALUES (?, ?)
+            """, (data_hora_str, valor_total))
+            id_venda = cursor.lastrowid
+            print(f'ID VENDA: {id_venda}')
+
+            for item in itens_para_registrar:
+                id_produto, quantidade, preco_unitario = item
+                cursor.execute("""
+                    INSERT INTO itens_da_venda (id_venda, id_produto, quantidade, preco_unitario) 
+                    VALUES (?, ?, ?, ?)
+                """, (id_venda, id_produto, quantidade, preco_unitario))
+            connection.commit()
+
             return True
         except sqlite3.Error as e:
+            print(f'Erro ao registrar uma venda: {e}')
             return False
 
+def listar_vendas_por_data(data):
+    with sqlite3.connect(DB_FILE) as connection:
+        cursor = connection.cursor()
+        try:
+            cursor.execute("""
+                SELECT * FROM vendas WHERE DATE(data_hora) = (?)
+            """, (data,))
+            vendas_encontradas = cursor.fetchall()
+            return vendas_encontradas
+        except sqlite3.Error as e:
+            print(f'Erro ao listar vendas por data: {e}')
+            return []
 
 if __name__ == '__main__':
+    # Pegando a data de hoje 09/10/2025
+    hoje = datetime.now().strftime('%Y-%m-%d')
+
     criar_tabelas()
 
     print('Adicionando categorias para testar função')
@@ -290,4 +335,37 @@ if __name__ == '__main__':
     if produtos_depois:
         print(f'  - Produto: {produtos_depois[0][1]} | Novo Estoque: {produtos_depois[0][3]}')
 
+    print()
+
+    print('TESTANDO a função registrar_venda (O GRANDE TESTE)')
+
+    # Simulando um carrinho de compras 
+    # O cliente esta comprando 2 unidade do produto id 1 e 1 unidade do produto id 1
+    carrinho_de_exemplo = [
+        (1,2), #(id_produto, quantidade)
+        (2,1)
+    ]
+
+    #Chamando a função pra registrar uma venda
+    print('Registrando uma nova venda')
+    if registrar_venda(carrinho_de_exemplo):
+        print('-> Venda Registrada com sucesso')
+    else:
+        print('-> Falha ao registrar venda')
+
+    print()
+
+    print(f'Testando a função listar_vendas_por_dia: DATA: {hoje}')
+    vendas_de_hoje = listar_vendas_por_data(hoje)
+
+    if vendas_de_hoje:
+        print('Vendas encontradas para hoje')
+        for venda in vendas_de_hoje:
+            # A 'venda' é uma tupla com (id_venda, data_hora, valor_total)
+            print(f'-> ID venda: {venda[0]} | Data/Hora: {venda[1]} | Total: R${venda[2]:.2f}')
+    else:
+        print('Nenhuma venda enconrada para hoje')
+
+
+    
     print('Testes finalizados')
