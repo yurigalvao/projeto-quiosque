@@ -215,7 +215,7 @@ def registrar_venda(itens):
                 INSERT INTO vendas (data_hora, valor_total) VALUES (?, ?)
             """, (data_hora_str, valor_total))
             id_venda = cursor.lastrowid
-            print(f'ID VENDA: {id_venda}')
+            #print(f'ID VENDA: {id_venda}')
 
             for item in itens_para_registrar:
                 id_produto, quantidade, preco_unitario = item
@@ -224,8 +224,8 @@ def registrar_venda(itens):
                     VALUES (?, ?, ?, ?)
                 """, (id_venda, id_produto, quantidade, preco_unitario))
             connection.commit()
-
-            return True
+            print(f'ID VENDA: {id_venda}')
+            return id_venda
         except sqlite3.Error as e:
             print(f'Erro ao registrar uma venda: {e}')
             return False
@@ -243,129 +243,90 @@ def listar_vendas_por_data(data):
             print(f'Erro ao listar vendas por data: {e}')
             return []
 
+def listar_vendas():
+    with sqlite3.connect(DB_FILE) as connection:
+        cursor = connection.cursor()
+        try:
+            cursor.execute("""
+                SELECT * FROM vendas
+            """)
+            vendas_listadas = cursor.fetchall()
+            return vendas_listadas
+        except sqlite3.Error as e:
+            print(f'Erro ao listar todas as vendas: {e}')
+            return []
+
+def listar_itens_por_venda(id_venda):
+    with sqlite3.connect(DB_FILE) as connection:
+        cursor = connection.cursor()
+        try:
+            cursor.execute("""
+                SELECT p.nome_produto, iv.quantidade, iv.preco_unitario FROM itens_da_venda as iv
+                JOIN produtos as p
+                ON iv.id_produto = p.id_produto
+                WHERE iv.id_venda = (?)
+            """, (id_venda,))
+            produtos_listados_por_idvenda = cursor.fetchall()
+            return produtos_listados_por_idvenda
+        except sqlite3.Error as e:
+            print(f'Erro ao listar produtos pelo id venda: {e}')
+            return []
+
+
 if __name__ == '__main__':
-    # Pegando a data de hoje 09/10/2025
-    hoje = datetime.now().strftime('%Y-%m-%d')
+    # --- PASSO 0: GARANTIR UM BANCO DE DADOS LIMPO PARA O TESTE ---
+    # Isso garante que cada vez que rodamos o teste, começamos do zero.
+    import os
+    if os.path.exists(DB_FILE):
+        os.remove(DB_FILE)
+        print(f"Banco de dados antigo '{DB_FILE}' removido. Começando do zero.")
 
-    criar_tabelas()
+    # --- PASSO 1: CRIAÇÃO DA ESTRUTURA ---
+    print("\n--- Testando: criar_tabelas ---")
+    if not criar_tabelas():
+        # Se as tabelas não puderem ser criadas, o programa para.
+        exit()
 
-    print('Adicionando categorias para testar função')
-
+    # --- PASSO 2: TESTES DE CATEGORIAS ---
+    print("\n--- Testando: adicionar_categoria e listar_categorias ---")
     adicionar_categoria('Brincos')
     adicionar_categoria('Colares')
     adicionar_categoria('Tiaras')
-
-    # adicionando uma categoria existente para gerar um erro
-    adicionar_categoria('Brincos')
-
-    print()
-
-    print('Testanto função listar_categorias (VERIFICAÇÃO)')
-
-    # Etapa de verificação
-    #Chamamos a função que busca os dados
-    lista_de_categorias = listar_categorias()
-
-    #verificamos se a lista não esta vazia 
-    if lista_de_categorias:
-        print('Ctegorias atualmente no banco de dados:')
-        #Fazemos o loop para exibir os dados de forma limpa 
-        for categoria in lista_de_categorias:
-            print(f'ID: {categoria[0]}, Nome: {categoria[1]}')
-    else:
-        print('Nenhuma categoria encontrada')
-    #-- FIM DA VERIFICAÇÃo
-
-    print()
-
-    print('TESTANDO adcionar novo produto')
+    adicionar_categoria('Brincos') # Teste de falha (duplicata)
     
-    # Teste de sucesso
-    adicionar_produto('Brinco_de_29_90', 29.9, 30, 1)
-    adicionar_produto('Colar_de_35_90', 35.9, 20, 2)
-    adicionar_produto('Tiara_de_19_90', 19.9, 10, 3)
+    print("Categorias atuais no banco:")
+    print(listar_categorias())
 
-    # Teste de falha
-    adicionar_produto('Brinco_de_29_90', 29.9, 30, 1)
-
-    print()
-
-    print('TESTANDO função de listar produtos')
-    lista_de_produtos = listar_produtos()
-
-    if lista_de_produtos:
-        print('Produtos encontrados no banco')
-        for produto in lista_de_produtos:
-            id_produto, nome_produto, preco_produto, estoque, categoria_nome = produto
-            print(f'ID:{id_produto} | Produto:{nome_produto} | Preço: R${preco_produto:.2f} | Estoque:{estoque} | Categoria:{categoria_nome}')
-    else:
-        print('Nenhum Produto encontrado')
-
-    print()
-
-    print('Testando a função de listar produtos por categoria')
-    produtos_filtrados = listar_produtos_por_categoria(1)
-    if produtos_filtrados:
-        for produto in produtos_filtrados:
-            id_produto, nome_produto, preco_produto, estoque = produto
-            print(f' -{nome_produto} (ID: {id_produto} | Preço: R${preco_produto:.2f} | Estoque: {estoque})')
-    else:
-        print('Nenhum produto encontrado para esta categoria')
-
-    print()
-
-    print('Testando função de atualizar estoque do produto')
-
-    print('Estoque antes da atualização')
-    produtos_antes = listar_produtos_por_categoria(1)
-    if produtos_antes:
-        print(f' - Produto: {produtos_antes[0][1]} | Estoque atual: {produtos_antes[0][3]}')
-
-    #Executando a atualização no produto de ID 1 para 45 unidades
-    id_para_atualizar = 1
-    novo_estoque = 45
-    if atualizar_estoque_produto(novo_estoque, id_para_atualizar):
-        print(f'Tentativa de atualizar estoque do produto do ID {id_para_atualizar} para {novo_estoque}')
-        print('Função rtornou True')
-    else:
-        print(f' Falha ao atualizar o estoque do produto ID {id_para_atualizar}')
-
-    print('Estoque Depois de atualizar')
-    produtos_depois = listar_produtos_por_categoria(1)
-    if produtos_depois:
-        print(f'  - Produto: {produtos_depois[0][1]} | Novo Estoque: {produtos_depois[0][3]}')
-
-    print()
-
-    print('TESTANDO a função registrar_venda (O GRANDE TESTE)')
-
-    # Simulando um carrinho de compras 
-    # O cliente esta comprando 2 unidade do produto id 1 e 1 unidade do produto id 1
-    carrinho_de_exemplo = [
-        (1,2), #(id_produto, quantidade)
-        (2,1)
-    ]
-
-    #Chamando a função pra registrar uma venda
-    print('Registrando uma nova venda')
-    if registrar_venda(carrinho_de_exemplo):
-        print('-> Venda Registrada com sucesso')
-    else:
-        print('-> Falha ao registrar venda')
-
-    print()
-
-    print(f'Testando a função listar_vendas_por_dia: DATA: {hoje}')
-    vendas_de_hoje = listar_vendas_por_data(hoje)
-
-    if vendas_de_hoje:
-        print('Vendas encontradas para hoje')
-        for venda in vendas_de_hoje:
-            # A 'venda' é uma tupla com (id_venda, data_hora, valor_total)
-            print(f'-> ID venda: {venda[0]} | Data/Hora: {venda[1]} | Total: R${venda[2]:.2f}')
-    else:
-        print('Nenhuma venda enconrada para hoje')
-
-
+    # --- PASSO 3: TESTES DE PRODUTOS ---
+    print("\n--- Testando: adicionar_produto, listar_produtos e filtros ---")
+    # Adicionando produtos para as categorias 1, 2 e 3
+    adicionar_produto('Brinco_de_29.90', 29.90, 50, 1)
+    adicionar_produto('Colar_de_29.90', 29.90, 30, 2)
+    adicionar_produto('Tiara_de_10.00', 10.00, 10, 3)
     
-    print('Testes finalizados')
+    print("\nListando todos os produtos (com JOIN):")
+    print(listar_produtos())
+
+    print("\nListando apenas produtos da categoria 2 (Colares):")
+    print(listar_produtos_por_categoria(2))
+
+    # --- PASSO 4: TESTE DE UPDATE ---
+    print("\n--- Testando: atualizar_estoque_produto ---")
+    print("Atualizando estoque do produto ID 1 para 45...")
+    atualizar_estoque_produto(1, 45)
+
+    # --- PASSO 5: O GRANDE TESTE DE VENDA ---
+    print("\n--- Testando: registrar_venda e listar_itens_por_venda ---")
+    # Carrinho: 2x Brincos de 29,90 (ID 1), 1x Tiara de 10.00 (ID 3)
+    carrinho = [(1, 2), (3, 1)] 
+    
+    novo_id_venda = registrar_venda(carrinho)
+    if novo_id_venda:
+        print(f"-> Venda {novo_id_venda} registrada com sucesso!")
+        print(f"-> Verificando itens da venda {novo_id_venda}:")
+        itens = listar_itens_por_venda(novo_id_venda)
+        print(itens)
+    else:
+        print("-> Falha ao registrar venda.")
+
+    print("\n--- TODOS OS TESTES CONCLUÍDOS ---")
