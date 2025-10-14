@@ -1,5 +1,14 @@
 import sqlite3
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+
+# Carrega variaveis do arquivo .env para o ambiente
+load_dotenv()
+
+# Carregaa senhha do admin em uma constante no python
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
+
 
 # Definimos o nome do arquivo do banco de dados como uma constante
 DB_FILE = 'quiosque.db'
@@ -95,6 +104,26 @@ def listar_categorias():
             print(f'Erro ao listar categorias: {e}')
             return []
 
+def deletar_categoria(id_categoria, senha_fornecida):
+    if senha_fornecida != ADMIN_PASSWORD:
+        return False
+    
+    with sqlite3.connect(DB_FILE) as connection:
+        # Liga a verificação de chaves estrangeiras para ESTA conexao
+        connection.execute('PRAGMA foreign_keys = ON;')
+
+        cursor = connection.cursor()
+        try:
+            cursor.execute("""
+                DELETE FROM categorias
+                WHERE id_categoria = (?)
+            """, (id_categoria,))
+            connection.commit()
+            return True
+        except sqlite3.Error as e:
+            print(f'Erro ao deletar cateoria: {e}')
+            return False
+
 
 # FUnções crud para 'produtos'
 def adicionar_produto(nome_produto, preco, quantidade_estoque, id_categoria):
@@ -186,6 +215,26 @@ def atualizar_nome_produto(novo_nome, id_produto):
             return True
         except sqlite3.Error as e:
             print(f'Erro ao modificar nome_produto: {e}')
+            return False
+
+def deletar_produto(id_produto, senha_fornecida):
+    if senha_fornecida != ADMIN_PASSWORD:
+        return False
+    
+    with sqlite3.connect(DB_FILE) as connection:
+        # Boa prática: manter o PRAGMA em todas as funções de escrita 
+        connection.execute('PRAGMA foreign_keys = ON;')
+
+        cursor = connection.cursor()
+        try:
+            cursor.execute("""
+                DELETE FROM produtos
+                WHERE id_produto = (?)
+            """, (id_produto,))
+            connection.commit()
+            return True
+        except sqlite3.Error as e:
+            print(f'Erro ao deletar produto: {e}')
             return False
 
 # Funções de crud para vendas
@@ -328,5 +377,48 @@ if __name__ == '__main__':
         print(itens)
     else:
         print("-> Falha ao registrar venda.")
+
+    # --- PASSO 6: TESTES DE DELETE SEGURO ---
+    print("\n--- Testando: deletar_categoria (seguro) ---")
+    
+    # Teste 1: Senha incorreta
+    print("\nTentando deletar a categoria ID 3 (Tiaras) com a senha errada...")
+    id_para_deletar = 3
+    senha_errada = "senha-incorreta-123"
+    resultado_falha = deletar_categoria(id_para_deletar, senha_errada)
+    print(f"Resultado da operação (falha): {resultado_falha}")
+    print("Verificando se as categorias ainda estão intactas:")
+    print(listar_categorias())
+
+    # Teste 2: Senha correta
+    print("\nTentando deletar a categoria ID 3 (Tiaras) com a senha CORRETA...")
+    resultado_sucesso = deletar_categoria(id_para_deletar, ADMIN_PASSWORD)
+    print(f"Resultado da operação (sucesso): {resultado_sucesso}")
+    print("Verificando se a categoria foi removida:")
+    print(listar_categorias())
+
+    # --- PASSO 7: TESTES DE DELETE SEGURO DE PRODUTO ---
+    print("\n--- Testando: deletar_produto (seguro) ---")
+
+    print(listar_produtos())
+    
+    # Teste 1: Senha incorreta
+    print("\nTentando deletar o produto ID 2 (Colar) com a senha errada...")
+    id_produto_para_deletar = 2
+    resultado_falha_produto = deletar_produto(id_produto_para_deletar, "senha-errada-999")
+    print(f"Resultado da operação (falha): {resultado_falha_produto}")
+    print("Verificando se a lista de produtos não foi alterada:")
+    # Imprime apenas os nomes para a lista ficar mais curta
+    print([produto[1] for produto in listar_produtos()]) 
+
+    # Teste 2: Senha correta
+    print("\nTentando deletar o produto ID 2 (Colar) com a senha CORRETA...")
+    resultado_sucesso_produto = deletar_produto(id_produto_para_deletar, ADMIN_PASSWORD)
+    print(f"Resultado da operação (sucesso): {resultado_sucesso_produto}")
+    print("Verificando se o produto foi removido:")
+    # Imprime apenas os nomes para a lista ficar mais curta
+    print([produto[1] for produto in listar_produtos()])
+
+    print("\n--- TODOS OS TESTES (INCLUINDO DELETE) CONCLUÍDOS ---")
 
     print("\n--- TODOS OS TESTES CONCLUÍDOS ---")
