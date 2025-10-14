@@ -123,6 +123,25 @@ def deletar_categoria(id_categoria, senha_fornecida):
         except sqlite3.Error as e:
             print(f'Erro ao deletar cateoria: {e}')
             return False
+        
+def atualizar_nome_categoria(novo_nome, id_categoria, senha_fornecida):
+    """Atualia o nome de uma categoria especifica"""
+    if senha_fornecida != ADMIN_PASSWORD:
+        return False
+    
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            cursor = connection.cursor()
+            cursor.execute("""
+                UPDATE categorias
+                SET nome_categoria = (?)
+                WHERE id_categoria = (?)
+            """,(novo_nome, id_categoria,))
+            connection.commit()
+        return True
+    except sqlite3.Error as e:
+        print(f'Erro ao modificar nome da categoria: {e}')
+        return False
 
 
 # FUnções crud para 'produtos'
@@ -186,23 +205,26 @@ def atualizar_estoque_produto(nova_quantidade, id_produto):
             print(f'Erro ao modificar quantidade_estoque: {e}')
             return False
 
-def atualizar_preco_produto(novo_preco, id_produto):
+def atualizar_preco_produto(novo_preco, id_produto, senha_fornecida):
     """Atualia o preço do produto especifico"""
-    with sqlite3.connect(DB_FILE) as connection:
-        cursor = connection.cursor()
-        try:
+    if senha_fornecida != ADMIN_PASSWORD:
+        return False
+    
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            cursor = connection.cursor()
             cursor.execute("""
                 UPDATE produtos
                 SET preco = (?)
                 WHERE id_produto = (?)
             """,(novo_preco, id_produto,))
             connection.commit()
-            return True
-        except sqlite3.Error as e:
-            print(f'Erro ao modificar preco: {e}')
-            return False
+        return True
+    except sqlite3.Error as e:
+        print(f'Erro ao modificar preco: {e}')
+        return False
 
-def atualizar_nome_produto(novo_nome, id_produto):
+def atualizar_nome_produto(novo_nome, id_produto, senha_fornecida):
     with sqlite3.connect(DB_FILE) as connection:
         cursor = connection.cursor()
         try:
@@ -247,14 +269,22 @@ def registrar_venda(itens):
     itens_para_registrar = []
     data_hora_obj = datetime.now()
     data_hora_str = data_hora_obj.strftime('%Y-%m-%d %H:%M:%S')
-    with sqlite3.connect(DB_FILE) as connection:
-        cursor = connection.cursor()
-        try:
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            cursor = connection.cursor()
             for (id_produto, quantidade) in itens:
                 cursor.execute("""
-                    SELECT preco FROM produtos WHERE id_produto = (?)
+                    SELECT preco, quantidade_estoque FROM produtos WHERE id_produto = (?)
                 """, (id_produto,))
                 resultado_query = cursor.fetchone()
+                quantidade_lista = resultado_query[1]
+                if quantidade > quantidade_lista:
+                    return False
+                cursor.execute("""
+                    UPDATE produtos
+                    SET quantidade_estoque = quantidade_estoque - (?)
+                    WHERE id_produto = (?)
+                """, (quantidade, id_produto))
                 preco_unitario = resultado_query[0]
                 subtotal = preco_unitario * quantidade
                 valor_total += subtotal
@@ -275,7 +305,7 @@ def registrar_venda(itens):
             connection.commit()
             print(f'ID VENDA: {id_venda}')
             return id_venda
-        except sqlite3.Error as e:
+    except sqlite3.Error as e:
             print(f'Erro ao registrar uma venda: {e}')
             return False
 
@@ -320,6 +350,44 @@ def listar_itens_por_venda(id_venda):
         except sqlite3.Error as e:
             print(f'Erro ao listar produtos pelo id venda: {e}')
             return []
+
+def deletar_venda(id_venda, senha_fornecida):
+    if senha_fornecida != ADMIN_PASSWORD:
+        return False
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            connection.execute('PRAGMA foreign_keys = ON;')
+
+            cursor = connection.cursor()
+            cursor.execute("""
+                SELECT id_produto, quantidade FROM itens_da_venda
+                WHERE id_venda = (?)
+            """,(id_venda,))
+            produtos_da_venda = cursor.fetchall()
+            
+            for produto in produtos_da_venda:
+                id_do_produto, quantidade = produto
+                cursor.execute("""
+                    UPDATE produtos
+                    SET quantidade_estoque = quantidade_estoque + (?)
+                    WHERE id_produto = (?)
+                """, (quantidade, id_do_produto,))
+
+            cursor.execute(""" 
+                DELETE from itens_da_venda
+                WHERE id_venda = (?)
+            """,(id_venda,))
+
+            cursor.execute("""
+                DELETE from vendas
+                WHERE id_venda = (?)
+            """,(id_venda,))
+
+            connection.commit()
+        return True
+    except sqlite3.Error as e:
+        print(f'Error: {e}')
+        return False
 
 
 if __name__ == '__main__':
@@ -419,6 +487,58 @@ if __name__ == '__main__':
     # Imprime apenas os nomes para a lista ficar mais curta
     print([produto[1] for produto in listar_produtos()])
 
+    # --- PASSO 8: TESTANDO A TRANSAÇÃO COMPLEXA DE DELETAR VENDA ---
+    print("\n--- Testando: deletar_venda com estorno de estoque ---")
+
+    # A venda que vamos deletar é a de ID 1.
+    # Itens: 2x Brinco (ID 1), 1x Tiara (ID 3)
+    # Estoque inicial: Brinco=50, Tiara=10.
+    # Após a venda: Brinco=48, Tiara=9.
+    # Após o delete: Brinco deve voltar para 50, Tiara para 10.
+    
+    id_venda_para_deletar = 1
+    
+    print("\nVerificando estoque ANTES do delete da venda:")
+    # Vamos pegar o estoque de todos os produtos para comparar
+    estoque_antes = {p[1]: p[3] for p in listar_produtos()}
+    print(estoque_antes)
+    
+    print(f"\nTentando deletar a Venda ID {id_venda_para_deletar} com a senha correta...")
+    resultado_delete_venda = deletar_venda(id_venda_para_deletar, ADMIN_PASSWORD)
+    print(f"Resultado da operação: {resultado_delete_venda}")
+    
+    print("\nVerificando se a venda foi removida:")
+    vendas_atuais = listar_vendas()
+    print(f"Vendas atuais no sistema: {vendas_atuais}")
+    if not any(v[0] == id_venda_para_deletar for v in vendas_atuais):
+        print(f"-> Sucesso! Venda {id_venda_para_deletar} não encontrada.")
+    else:
+        print(f"-> FALHA! Venda {id_venda_para_deletar} ainda existe.")
+
+    print("\nVerificando estoque DEPOIS do delete (esperamos o estorno):")
+    estoque_depois = {p[1]: p[3] for p in listar_produtos()}
+    print(estoque_depois)
+
+    # --- PASSO 9: TESTANDO UPDATE SEGURO DE PREÇO ---
+    print("\n--- Testando: atualizar_preco_produto (seguro) ---")
+    id_produto_para_atualizar = 3  # A Tiara
+    novo_preco = 15.0
+    
+    print("\nProdutos e preços ANTES da atualização:")
+    print([f"{p[1]}: R${p[2]}" for p in listar_produtos()])
+
+    # Teste 1: Senha incorreta
+    print(f"\nTentando alterar o preço do produto ID {id_produto_para_atualizar} com a senha errada...")
+    resultado_falha = atualizar_preco_produto(novo_preco, id_produto_para_atualizar, "senha-qualquer")
+    print(f"Resultado da operação (falha): {resultado_falha}")
+
+    # Teste 2: Senha correta
+    print(f"\nTentando alterar o preço do produto ID {id_produto_para_atualizar} com a senha CORRETA...")
+    resultado_sucesso = atualizar_preco_produto(novo_preco, id_produto_para_atualizar, ADMIN_PASSWORD)
+    print(f"Resultado da operação (sucesso): {resultado_sucesso}")
+
+    print("\nProdutos e preços DEPOIS da atualização:")
+    print([f"{p[1]}: R${p[2]}" for p in listar_produtos()])
     print("\n--- TODOS OS TESTES (INCLUINDO DELETE) CONCLUÍDOS ---")
 
     print("\n--- TODOS OS TESTES CONCLUÍDOS ---")
