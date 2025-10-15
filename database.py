@@ -204,41 +204,32 @@ def atualizar_estoque_produto(nova_quantidade, id_produto):
         print(f'Erro ao modificar quantidade_estoque: {e}')
         return False
 
-def atualizar_preco_produto(novo_preco, id_produto, senha_fornecida):
-    """Atualia o preço do produto especifico"""
+def atualizar_produto(id_produto, senha_fornecida, novo_nome=None, novo_preco=None):
     if senha_fornecida != ADMIN_PASSWORD:
         return False
-    
     try:
         with sqlite3.connect(DB_FILE) as connection:
             cursor = connection.cursor()
-            cursor.execute("""
-                UPDATE produtos
-                SET preco = (?)
-                WHERE id_produto = (?)
-            """,(novo_preco, id_produto,))
+            partes_do_set = []
+            valores = []
+            if novo_nome is not None:
+                partes_do_set.append('nome_produto = ?')
+                valores.append(novo_nome)
+            if novo_preco is not None:
+                partes_do_set.append('preco = ?')
+                valores.append(novo_preco)
+
+            if not partes_do_set:
+                return True
+            clausula_set = ', '.join(partes_do_set)
+            query_sql = f'UPDATE produtos SET {clausula_set} WHERE id_produto = (?)'
+            valores.append(id_produto)
+            cursor.execute(query_sql, valores)
             connection.commit()
         return True
     except sqlite3.Error as e:
-        print(f'Erro ao modificar preco: {e}')
         return False
 
-def atualizar_nome_produto(novo_nome, id_produto, senha_fornecida):
-    if senha_fornecida != ADMIN_PASSWORD:
-        return False
-    try:
-        with sqlite3.connect(DB_FILE) as connection:
-            cursor = connection.cursor()
-            cursor.execute("""
-                UPDATE produtos
-                SET nome_produto = (?)
-                WHERE id_produto = (?)
-            """,(novo_nome, id_produto,))
-            connection.commit()
-        return True
-    except sqlite3.Error as e:
-        print(f'Erro ao modificar nome_produto: {e}')
-        return False
 
 def deletar_produto(id_produto, senha_fornecida):
     if senha_fornecida != ADMIN_PASSWORD:
@@ -519,26 +510,40 @@ if __name__ == '__main__':
     estoque_depois = {p[1]: p[3] for p in listar_produtos()}
     print(estoque_depois)
 
-    # --- PASSO 9: TESTANDO UPDATE SEGURO DE PREÇO ---
-    print("\n--- Testando: atualizar_preco_produto (seguro) ---")
-    id_produto_para_atualizar = 3  # A Tiara
-    novo_preco = 15.0
+    # --- PASSO FINAL: TESTANDO A SUPER-FUNÇÃO ATUALIZAR_PRODUTO ---
+    print("\n--- Testando: a super-função atualizar_produto ---")
     
-    print("\nProdutos e preços ANTES da atualização:")
-    print([f"{p[1]}: R${p[2]}" for p in listar_produtos()])
+    id_alvo_brinco = 1 # Nosso alvo será o 'Brinco'
+    
+    print("\nEstado inicial dos produtos:")
+    print(listar_produtos())
 
-    # Teste 1: Senha incorreta
-    print(f"\nTentando alterar o preço do produto ID {id_produto_para_atualizar} com a senha errada...")
-    resultado_falha = atualizar_preco_produto(novo_preco, id_produto_para_atualizar, "senha-qualquer")
-    print(f"Resultado da operação (falha): {resultado_falha}")
+    # Cenário 1: Falha (senha errada)
+    print("\n1. Testando falha com senha errada...")
+    resultado_falha = atualizar_produto(id_alvo_brinco, "senha-ruim", novo_nome="NOME NAO DEVE MUDAR")
+    print(f"Resultado: {resultado_falha}")
 
-    # Teste 2: Senha correta
-    print(f"\nTentando alterar o preço do produto ID {id_produto_para_atualizar} com a senha CORRETA...")
-    resultado_sucesso = atualizar_preco_produto(novo_preco, id_produto_para_atualizar, ADMIN_PASSWORD)
-    print(f"Resultado da operação (sucesso): {resultado_sucesso}")
+    # Cenário 2: Sucesso (só o nome)
+    print("\n2. Testando atualização apenas do NOME...")
+    resultado_nome = atualizar_produto(id_alvo_brinco, ADMIN_PASSWORD, novo_nome="Brinco de Prata")
+    print(f"Resultado: {resultado_nome}")
 
-    print("\nProdutos e preços DEPOIS da atualização:")
-    print([f"{p[1]}: R${p[2]}" for p in listar_produtos()])
+    # Cenário 3: Sucesso (só o preço)
+    print("\n3. Testando atualização apenas do PREÇO...")
+    resultado_preco = atualizar_produto(id_alvo_brinco, ADMIN_PASSWORD, novo_preco=35.50)
+    print(f"Resultado: {resultado_preco}")
+    
+    # Cenário 4: Sucesso (nome e preço juntos)
+    print("\n4. Testando atualização de NOME e PREÇO simultaneamente...")
+    id_alvo_tiara = 3 # Agora vamos na Tiara
+    resultado_ambos = atualizar_produto(id_alvo_tiara, ADMIN_PASSWORD, novo_nome="Tiara de Festa", novo_preco=22.0)
+    print(f"Resultado: {resultado_ambos}")
+
+    print("\n--- Verificação Final ---")
+    print("Estado final dos produtos após todas as atualizações:")
+    print(listar_produtos())
+
+
     print("\n--- TODOS OS TESTES (INCLUINDO DELETE) CONCLUÍDOS ---")
 
     print("\n--- TODOS OS TESTES CONCLUÍDOS ---")
