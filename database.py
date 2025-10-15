@@ -77,52 +77,51 @@ def criar_tabelas():
 
 def adicionar_categoria(nome_categoria):
     """Adiciona uma nova categoria ao banco de dados"""
-    with sqlite3.connect(DB_FILE) as connection:
-        cursor = connection.cursor()
-        try:
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            cursor = connection.cursor()
             cursor.execute("""
                 INSERT INTO categorias (nome_categoria) VALUES (?)
             """, (nome_categoria,))
             connection.commit()
-            return True
-        except sqlite3.Error as e:
-            print(f'Erro ao inserir dados na tebela categorias: {e}')
-            return False
+        return True
+    except sqlite3.Error as e:
+        print(f'Erro ao inserir dados na tebela categorias: {e}')
+        return False
 
 
 def listar_categorias():
     """Retorna uma lista de todas as categorias cadastradas"""
-    with sqlite3.connect(DB_FILE) as connection:
-        cursor = connection.cursor()
-        try:
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            cursor = connection.cursor()
             cursor.execute("""
                 SELECT id_categoria, nome_categoria FROM categorias
             """)
             categorias_listadas = cursor.fetchall()
-            return categorias_listadas
-        except sqlite3.Error as e:
-            print(f'Erro ao listar categorias: {e}')
-            return []
+        return categorias_listadas
+    except sqlite3.Error as e:
+        print(f'Erro ao listar categorias: {e}')
+        return []
 
 def deletar_categoria(id_categoria, senha_fornecida):
     if senha_fornecida != ADMIN_PASSWORD:
         return False
-    
-    with sqlite3.connect(DB_FILE) as connection:
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
         # Liga a verificação de chaves estrangeiras para ESTA conexao
-        connection.execute('PRAGMA foreign_keys = ON;')
+            connection.execute('PRAGMA foreign_keys = ON;')
 
-        cursor = connection.cursor()
-        try:
+            cursor = connection.cursor()
             cursor.execute("""
                 DELETE FROM categorias
                 WHERE id_categoria = (?)
             """, (id_categoria,))
             connection.commit()
-            return True
-        except sqlite3.Error as e:
-            print(f'Erro ao deletar cateoria: {e}')
-            return False
+        return True
+    except sqlite3.Error as e:
+        print(f'Erro ao deletar cateoria: {e}')
+        return False
         
 def atualizar_nome_categoria(novo_nome, id_categoria, senha_fornecida):
     """Atualia o nome de uma categoria especifica"""
@@ -147,63 +146,63 @@ def atualizar_nome_categoria(novo_nome, id_categoria, senha_fornecida):
 # FUnções crud para 'produtos'
 def adicionar_produto(nome_produto, preco, quantidade_estoque, id_categoria):
     """Adiciona um novo produto ao banco de dados"""
-    with sqlite3.connect(DB_FILE) as connection:
-        cursor = connection.cursor()
-        try:
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            cursor = connection.cursor()
             cursor.execute("""
                 INSERT INTO produtos (nome_produto, preco, quantidade_estoque, id_categoria) VALUES (?, ?, ?, ?)
             """, (nome_produto, preco, quantidade_estoque, id_categoria,))
             connection.commit()
-            return True
-        except sqlite3.Error as e:
-            print(f'Erro ao inserir produto na tabela produtos: {e}')
-            return False
+        return True
+    except sqlite3.Error as e:
+        print(f'Erro ao inserir produto na tabela produtos: {e}')
+        return False
 
 def listar_produtos():
     """Retorna uma lista de todos os produtos com o nome da categoria (usando JOIN)"""
-    with sqlite3.connect(DB_FILE) as connection:
-        cursor = connection.cursor()
-        try:
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            cursor = connection.cursor()
             cursor.execute("""
                 SELECT p.id_produto, p.nome_produto, p.preco, p.quantidade_estoque, c.nome_categoria FROM produtos AS p
                 JOIN categorias AS c
                 ON p.id_categoria = c.id_categoria
             """)
             produtos_listados = cursor.fetchall()
-            return produtos_listados
-        except sqlite3.Error as e:
-            print(f'Erro ao listar produtos: {e}')
-            return []
+        return produtos_listados
+    except sqlite3.Error as e:
+        print(f'Erro ao listar produtos: {e}')
+        return []
         
 def listar_produtos_por_categoria(id_categoria):
-    with sqlite3.connect(DB_FILE) as connection:
-        cursor = connection.cursor()
-        try:
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            cursor = connection.cursor()
             cursor.execute("""
                 SELECT id_produto, nome_produto, preco, quantidade_estoque FROM produtos
                 WHERE id_categoria = (?)
             """, (id_categoria,))
             produtos_listados_por_categoria = cursor.fetchall()
-            return produtos_listados_por_categoria
-        except sqlite3.Error as e:
-            print(f'Erro ao listar produtos: {e}')
-            return []
+        return produtos_listados_por_categoria
+    except sqlite3.Error as e:
+        print(f'Erro ao listar produtos: {e}')
+        return []
 
 def atualizar_estoque_produto(nova_quantidade, id_produto):
     """Atualiza o estoque de um produto especifico"""
-    with sqlite3.connect(DB_FILE) as connection:
-        cursor = connection.cursor()
-        try:
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            cursor = connection.cursor()
             cursor.execute("""
                 UPDATE produtos
                 SET quantidade_estoque = (?)
                 WHERE id_produto = (?)
             """,(nova_quantidade, id_produto,))
             connection.commit()
-            return True
-        except sqlite3.Error as e:
-            print(f'Erro ao modificar quantidade_estoque: {e}')
-            return False
+        return True
+    except sqlite3.Error as e:
+        print(f'Erro ao modificar quantidade_estoque: {e}')
+        return False
 
 def atualizar_preco_produto(novo_preco, id_produto, senha_fornecida):
     """Atualia o preço do produto especifico"""
@@ -225,39 +224,40 @@ def atualizar_preco_produto(novo_preco, id_produto, senha_fornecida):
         return False
 
 def atualizar_nome_produto(novo_nome, id_produto, senha_fornecida):
-    with sqlite3.connect(DB_FILE) as connection:
-        cursor = connection.cursor()
-        try:
+    if senha_fornecida != ADMIN_PASSWORD:
+        return False
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            cursor = connection.cursor()
             cursor.execute("""
                 UPDATE produtos
                 SET nome_produto = (?)
                 WHERE id_produto = (?)
             """,(novo_nome, id_produto,))
             connection.commit()
-            return True
-        except sqlite3.Error as e:
-            print(f'Erro ao modificar nome_produto: {e}')
-            return False
+        return True
+    except sqlite3.Error as e:
+        print(f'Erro ao modificar nome_produto: {e}')
+        return False
 
 def deletar_produto(id_produto, senha_fornecida):
     if senha_fornecida != ADMIN_PASSWORD:
         return False
-    
-    with sqlite3.connect(DB_FILE) as connection:
-        # Boa prática: manter o PRAGMA em todas as funções de escrita 
-        connection.execute('PRAGMA foreign_keys = ON;')
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            # Boa prática: manter o PRAGMA em todas as funções de escrita 
+            connection.execute('PRAGMA foreign_keys = ON;')
 
-        cursor = connection.cursor()
-        try:
+            cursor = connection.cursor()
             cursor.execute("""
                 DELETE FROM produtos
                 WHERE id_produto = (?)
             """, (id_produto,))
             connection.commit()
-            return True
-        except sqlite3.Error as e:
-            print(f'Erro ao deletar produto: {e}')
-            return False
+        return True
+    except sqlite3.Error as e:
+        print(f'Erro ao deletar produto: {e}')
+        return False
 
 # Funções de crud para vendas
 def registrar_venda(itens):
@@ -304,41 +304,41 @@ def registrar_venda(itens):
                 """, (id_venda, id_produto, quantidade, preco_unitario))
             connection.commit()
             print(f'ID VENDA: {id_venda}')
-            return id_venda
+        return id_venda
     except sqlite3.Error as e:
-            print(f'Erro ao registrar uma venda: {e}')
-            return False
+        print(f'Erro ao registrar uma venda: {e}')
+        return False
 
 def listar_vendas_por_data(data):
-    with sqlite3.connect(DB_FILE) as connection:
-        cursor = connection.cursor()
-        try:
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            cursor = connection.cursor()
             cursor.execute("""
                 SELECT * FROM vendas WHERE DATE(data_hora) = (?)
             """, (data,))
             vendas_encontradas = cursor.fetchall()
-            return vendas_encontradas
-        except sqlite3.Error as e:
-            print(f'Erro ao listar vendas por data: {e}')
-            return []
+        return vendas_encontradas
+    except sqlite3.Error as e:
+        print(f'Erro ao listar vendas por data: {e}')
+        return []
 
 def listar_vendas():
-    with sqlite3.connect(DB_FILE) as connection:
-        cursor = connection.cursor()
-        try:
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            cursor = connection.cursor()
             cursor.execute("""
                 SELECT * FROM vendas
             """)
             vendas_listadas = cursor.fetchall()
-            return vendas_listadas
-        except sqlite3.Error as e:
-            print(f'Erro ao listar todas as vendas: {e}')
-            return []
+        return vendas_listadas
+    except sqlite3.Error as e:
+        print(f'Erro ao listar todas as vendas: {e}')
+        return []
 
 def listar_itens_por_venda(id_venda):
-    with sqlite3.connect(DB_FILE) as connection:
-        cursor = connection.cursor()
-        try:
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            cursor = connection.cursor()
             cursor.execute("""
                 SELECT p.nome_produto, iv.quantidade, iv.preco_unitario FROM itens_da_venda as iv
                 JOIN produtos as p
@@ -346,10 +346,10 @@ def listar_itens_por_venda(id_venda):
                 WHERE iv.id_venda = (?)
             """, (id_venda,))
             produtos_listados_por_idvenda = cursor.fetchall()
-            return produtos_listados_por_idvenda
-        except sqlite3.Error as e:
-            print(f'Erro ao listar produtos pelo id venda: {e}')
-            return []
+        return produtos_listados_por_idvenda
+    except sqlite3.Error as e:
+        print(f'Erro ao listar produtos pelo id venda: {e}')
+        return []
 
 def deletar_venda(id_venda, senha_fornecida):
     if senha_fornecida != ADMIN_PASSWORD:
