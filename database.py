@@ -14,12 +14,12 @@ ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 DB_FILE = 'quiosque.db'
 
 
-def criar_tabelas():
+def create_tables():
     """
     FUnção para criar as tabelas iniciais do banco de dados,
     caso elas ainda não existam 
     """
-    print('Verificando e criando tabelas, se necessari...')
+    print('Verificando e criando tabelas, se necessario...')
     try:
         with sqlite3.connect(DB_FILE) as connection:
             cursor = connection.cursor()
@@ -75,14 +75,14 @@ def criar_tabelas():
         return False
 
 
-def adicionar_categoria(nome_categoria):
+def add_category(category_name):
     """Adiciona uma nova categoria ao banco de dados"""
     try:
         with sqlite3.connect(DB_FILE) as connection:
             cursor = connection.cursor()
             cursor.execute("""
                 INSERT INTO categorias (nome_categoria) VALUES (?)
-            """, (nome_categoria,))
+            """, (category_name,))
             connection.commit()
         return True
     except sqlite3.Error as e:
@@ -90,10 +90,11 @@ def adicionar_categoria(nome_categoria):
         return False
 
 
-def listar_categorias():
+def list_categories():
     """Retorna uma lista de todas as categorias cadastradas"""
     try:
         with sqlite3.connect(DB_FILE) as connection:
+            connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
             cursor.execute("""
                 SELECT id_categoria, nome_categoria FROM categorias
@@ -104,8 +105,8 @@ def listar_categorias():
         print(f'Erro ao listar categorias: {e}')
         return []
 
-def deletar_categoria(id_categoria, senha_fornecida):
-    if senha_fornecida != ADMIN_PASSWORD:
+def delete_category(category_id, provided_password):
+    if provided_password != ADMIN_PASSWORD:
         return False
     try:
         with sqlite3.connect(DB_FILE) as connection:
@@ -116,16 +117,16 @@ def deletar_categoria(id_categoria, senha_fornecida):
             cursor.execute("""
                 DELETE FROM categorias
                 WHERE id_categoria = (?)
-            """, (id_categoria,))
+            """, (category_id,))
             connection.commit()
         return True
     except sqlite3.Error as e:
         print(f'Erro ao deletar cateoria: {e}')
         return False
         
-def atualizar_nome_categoria(novo_nome, id_categoria, senha_fornecida):
+def update_category_name(new_name, category_id, provided_password):
     """Atualia o nome de uma categoria especifica"""
-    if senha_fornecida != ADMIN_PASSWORD:
+    if provided_password != ADMIN_PASSWORD:
         return False
     
     try:
@@ -135,7 +136,7 @@ def atualizar_nome_categoria(novo_nome, id_categoria, senha_fornecida):
                 UPDATE categorias
                 SET nome_categoria = (?)
                 WHERE id_categoria = (?)
-            """,(novo_nome, id_categoria,))
+            """,(new_name, category_id,))
             connection.commit()
         return True
     except sqlite3.Error as e:
@@ -144,51 +145,68 @@ def atualizar_nome_categoria(novo_nome, id_categoria, senha_fornecida):
 
 
 # FUnções crud para 'produtos'
-def adicionar_produto(nome_produto, preco, quantidade_estoque, id_categoria):
+def add_product(product_data):
     """Adiciona um novo produto ao banco de dados"""
     try:
         with sqlite3.connect(DB_FILE) as connection:
             cursor = connection.cursor()
-            cursor.execute("""
-                INSERT INTO produtos (nome_produto, preco, quantidade_estoque, id_categoria) VALUES (?, ?, ?, ?)
-            """, (nome_produto, preco, quantidade_estoque, id_categoria,))
+            sql_query = ("""
+                INSERT INTO produtos (nome_produto, preco, quantidade_estoque, id_categoria) VALUES (:nome_produto, :preco, :quantidade_estoque, :id_categoria)
+            """)
+            cursor.execute(sql_query, product_data)
             connection.commit()
         return True
     except sqlite3.Error as e:
         print(f'Erro ao inserir produto na tabela produtos: {e}')
         return False
+    
+def add_multiple_products(product_list):
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            cursor = connection.cursor()
+            sql_query = ("""
+                INSERT INTO produtos (nome_produto, preco, quantidade_estoque, id_categoria) VALUES (:nome_produto, :preco, :quantidade_estoque, :id_categoria)
+            """)
+            cursor.executemany(sql_query, product_list)
+            connection.commit()
+        return True
+    except sqlite3.Error as e:
+        print(f'Erro ao adicionar varios produtos: {e}')
+        return False
 
-def listar_produtos():
+def list_products():
     """Retorna uma lista de todos os produtos com o nome da categoria (usando JOIN)"""
     try:
         with sqlite3.connect(DB_FILE) as connection:
+            connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
             cursor.execute("""
                 SELECT p.id_produto, p.nome_produto, p.preco, p.quantidade_estoque, c.nome_categoria FROM produtos AS p
                 JOIN categorias AS c
                 ON p.id_categoria = c.id_categoria
             """)
-            produtos_listados = cursor.fetchall()
-        return produtos_listados
+            products = cursor.fetchall()
+        return products
     except sqlite3.Error as e:
         print(f'Erro ao listar produtos: {e}')
         return []
         
-def listar_produtos_por_categoria(id_categoria):
+def list_products_by_category(category_id):
     try:
         with sqlite3.connect(DB_FILE) as connection:
+            connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
             cursor.execute("""
                 SELECT id_produto, nome_produto, preco, quantidade_estoque FROM produtos
                 WHERE id_categoria = (?)
-            """, (id_categoria,))
-            produtos_listados_por_categoria = cursor.fetchall()
-        return produtos_listados_por_categoria
+            """, (category_id,))
+            products = cursor.fetchall()
+        return products
     except sqlite3.Error as e:
         print(f'Erro ao listar produtos: {e}')
         return []
 
-def atualizar_estoque_produto(nova_quantidade, id_produto):
+def update_product_stock(new_quantity, product_id):
     """Atualiza o estoque de um produto especifico"""
     try:
         with sqlite3.connect(DB_FILE) as connection:
@@ -197,42 +215,42 @@ def atualizar_estoque_produto(nova_quantidade, id_produto):
                 UPDATE produtos
                 SET quantidade_estoque = (?)
                 WHERE id_produto = (?)
-            """,(nova_quantidade, id_produto,))
+            """,(new_quantity, product_id,))
             connection.commit()
         return True
     except sqlite3.Error as e:
         print(f'Erro ao modificar quantidade_estoque: {e}')
         return False
 
-def atualizar_produto(id_produto, senha_fornecida, novo_nome=None, novo_preco=None):
-    if senha_fornecida != ADMIN_PASSWORD:
+def update_product(product_id, provided_password, new_name=None, new_price=None):
+    if provided_password != ADMIN_PASSWORD:
         return False
     try:
         with sqlite3.connect(DB_FILE) as connection:
             cursor = connection.cursor()
-            partes_do_set = []
-            valores = []
-            if novo_nome is not None:
-                partes_do_set.append('nome_produto = ?')
-                valores.append(novo_nome)
-            if novo_preco is not None:
-                partes_do_set.append('preco = ?')
-                valores.append(novo_preco)
+            set_clausules = []
+            values = []
+            if new_name is not None:
+                set_clausules.append('nome_produto = ?')
+                values.append(new_name)
+            if new_price is not None:
+                set_clausules.append('preco = ?')
+                values.append(new_price)
 
-            if not partes_do_set:
+            if not set_clausules:
                 return True
-            clausula_set = ', '.join(partes_do_set)
-            query_sql = f'UPDATE produtos SET {clausula_set} WHERE id_produto = (?)'
-            valores.append(id_produto)
-            cursor.execute(query_sql, valores)
+            set_statement = ', '.join(set_clausules)
+            sql_query = f'UPDATE produtos SET {set_statement} WHERE id_produto = (?)'
+            values.append(product_id)
+            cursor.execute(sql_query, values)
             connection.commit()
         return True
     except sqlite3.Error as e:
         return False
 
 
-def deletar_produto(id_produto, senha_fornecida):
-    if senha_fornecida != ADMIN_PASSWORD:
+def delete_product(product_id, provided_password):
+    if provided_password != ADMIN_PASSWORD:
         return False
     try:
         with sqlite3.connect(DB_FILE) as connection:
@@ -243,7 +261,7 @@ def deletar_produto(id_produto, senha_fornecida):
             cursor.execute("""
                 DELETE FROM produtos
                 WHERE id_produto = (?)
-            """, (id_produto,))
+            """, (product_id,))
             connection.commit()
         return True
     except sqlite3.Error as e:
@@ -251,99 +269,108 @@ def deletar_produto(id_produto, senha_fornecida):
         return False
 
 # Funções de crud para vendas
-def registrar_venda(itens):
+def register_sale(items):
     """
     Registra uma nova venda na tabela vendas e seus respectivos
     itens na tabela itens_da_venda, itens deve ser uma lista
     """
-    valor_total = 0
-    itens_para_registrar = []
-    data_hora_obj = datetime.now()
-    data_hora_str = data_hora_obj.strftime('%Y-%m-%d %H:%M:%S')
+    total_price = 0
+    items_to_register = []
+    datetime_obj = datetime.now()
+    datetime_str = datetime_obj.strftime('%Y-%m-%d %H:%M:%S')
     try:
         with sqlite3.connect(DB_FILE) as connection:
             cursor = connection.cursor()
-            for (id_produto, quantidade) in itens:
+            for (product_id, quantity) in items:
                 cursor.execute("""
                     SELECT preco, quantidade_estoque FROM produtos WHERE id_produto = (?)
-                """, (id_produto,))
-                resultado_query = cursor.fetchone()
-                quantidade_lista = resultado_query[1]
-                if quantidade > quantidade_lista:
+                """, (product_id,))
+                query_result = cursor.fetchone()
+                if not query_result:
+                    print(f'Erro: Produto com ID {product_id} não encontrado')
                     return False
+                
+                stock_quantity = query_result[1]
+                if quantity > stock_quantity:
+                    print(f'Erro: Estoque insuficiente para o produto ID {product_id}')
+                    return False
+                
                 cursor.execute("""
                     UPDATE produtos
                     SET quantidade_estoque = quantidade_estoque - (?)
                     WHERE id_produto = (?)
-                """, (quantidade, id_produto))
-                preco_unitario = resultado_query[0]
-                subtotal = preco_unitario * quantidade
-                valor_total += subtotal
-                itens_para_registrar.append((id_produto, quantidade, preco_unitario))
+                """, (quantity, product_id))
+                unit_price = query_result[0]
+                subtotal = unit_price * quantity
+                total_price += subtotal
+                items_to_register.append((product_id, quantity, unit_price))
 
             cursor.execute("""
                 INSERT INTO vendas (data_hora, valor_total) VALUES (?, ?)
-            """, (data_hora_str, valor_total))
-            id_venda = cursor.lastrowid
+            """, (datetime_str, total_price))
+            sale_id = cursor.lastrowid
             #print(f'ID VENDA: {id_venda}')
 
-            for item in itens_para_registrar:
-                id_produto, quantidade, preco_unitario = item
+            for item in items_to_register:
+                product_id, quantity, unit_price = item
                 cursor.execute("""
                     INSERT INTO itens_da_venda (id_venda, id_produto, quantidade, preco_unitario) 
                     VALUES (?, ?, ?, ?)
-                """, (id_venda, id_produto, quantidade, preco_unitario))
+                """, (sale_id, product_id, quantity, unit_price))
             connection.commit()
-            print(f'ID VENDA: {id_venda}')
-        return id_venda
+            print(f'ID VENDA: {sale_id}')
+        return sale_id
     except sqlite3.Error as e:
         print(f'Erro ao registrar uma venda: {e}')
         return False
 
-def listar_vendas_por_data(data):
+def list_sales_by_date(date_str):
     try:
         with sqlite3.connect(DB_FILE) as connection:
+            connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
             cursor.execute("""
                 SELECT * FROM vendas WHERE DATE(data_hora) = (?)
-            """, (data,))
-            vendas_encontradas = cursor.fetchall()
-        return vendas_encontradas
+            """, (date_str,))
+            found_sales = cursor.fetchall()
+        return found_sales
     except sqlite3.Error as e:
         print(f'Erro ao listar vendas por data: {e}')
         return []
 
-def listar_vendas():
+def list_sales():
     try:
         with sqlite3.connect(DB_FILE) as connection:
+            connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
             cursor.execute("""
                 SELECT * FROM vendas
             """)
-            vendas_listadas = cursor.fetchall()
-        return vendas_listadas
+            sales = cursor.fetchall()
+        return sales
     except sqlite3.Error as e:
         print(f'Erro ao listar todas as vendas: {e}')
         return []
 
-def listar_itens_por_venda(id_venda):
+def list_items_by_sale(sale_id):
     try:
         with sqlite3.connect(DB_FILE) as connection:
+            connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
             cursor.execute("""
                 SELECT p.nome_produto, iv.quantidade, iv.preco_unitario FROM itens_da_venda as iv
                 JOIN produtos as p
                 ON iv.id_produto = p.id_produto
                 WHERE iv.id_venda = (?)
-            """, (id_venda,))
-            produtos_listados_por_idvenda = cursor.fetchall()
-        return produtos_listados_por_idvenda
+            """, (sale_id,))
+            items = cursor.fetchall()
+        return items
     except sqlite3.Error as e:
         print(f'Erro ao listar produtos pelo id venda: {e}')
         return []
 
-def deletar_venda(id_venda, senha_fornecida):
-    if senha_fornecida != ADMIN_PASSWORD:
+def delete_sale(sale_id, provided_password):
+    if provided_password != ADMIN_PASSWORD:
         return False
     try:
         with sqlite3.connect(DB_FILE) as connection:
@@ -353,26 +380,26 @@ def deletar_venda(id_venda, senha_fornecida):
             cursor.execute("""
                 SELECT id_produto, quantidade FROM itens_da_venda
                 WHERE id_venda = (?)
-            """,(id_venda,))
-            produtos_da_venda = cursor.fetchall()
+            """,(sale_id,))
+            sold_products = cursor.fetchall()
             
-            for produto in produtos_da_venda:
-                id_do_produto, quantidade = produto
+            for product in sold_products:
+                product_id, quantity = product
                 cursor.execute("""
                     UPDATE produtos
                     SET quantidade_estoque = quantidade_estoque + (?)
                     WHERE id_produto = (?)
-                """, (quantidade, id_do_produto,))
+                """, (quantity, product_id,))
 
             cursor.execute(""" 
                 DELETE from itens_da_venda
                 WHERE id_venda = (?)
-            """,(id_venda,))
+            """,(sale_id,))
 
             cursor.execute("""
                 DELETE from vendas
                 WHERE id_venda = (?)
-            """,(id_venda,))
+            """,(sale_id,))
 
             connection.commit()
         return True
@@ -382,168 +409,95 @@ def deletar_venda(id_venda, senha_fornecida):
 
 
 if __name__ == '__main__':
-    # --- PASSO 0: GARANTIR UM BANCO DE DADOS LIMPO PARA O TESTE ---
-    # Isso garante que cada vez que rodamos o teste, começamos do zero.
-    import os
+    # --- STEP 0: ENSURE A CLEAN DATABASE FOR THE TEST ---
     if os.path.exists(DB_FILE):
         os.remove(DB_FILE)
-        print(f"Banco de dados antigo '{DB_FILE}' removido. Começando do zero.")
+        print(f"Old database '{DB_FILE}' removed. Starting from scratch.")
 
-    # --- PASSO 1: CRIAÇÃO DA ESTRUTURA ---
-    print("\n--- Testando: criar_tabelas ---")
-    if not criar_tabelas():
-        # Se as tabelas não puderem ser criadas, o programa para.
+    # --- STEP 1: STRUCTURE CREATION ---
+    print("\n--- Testing: create_tables ---")
+    if not create_tables():
         exit()
 
-    # --- PASSO 2: TESTES DE CATEGORIAS ---
-    print("\n--- Testando: adicionar_categoria e listar_categorias ---")
-    adicionar_categoria('Brincos')
-    adicionar_categoria('Colares')
-    adicionar_categoria('Tiaras')
-    adicionar_categoria('Brincos') # Teste de falha (duplicata)
+    # --- STEP 2: CATEGORY TESTS ---
+    print("\n--- Testing: add_category and list_categories ---")
+    add_category('Brincos')
+    add_category('Colares')
+    add_category('Tiaras')
+    add_category('Brincos') # Expected failure (duplicate)
     
-    print("Categorias atuais no banco:")
-    print(listar_categorias())
+    print("Current categories in the database (accessing by name):")
+    category_list = list_categories()
+    if category_list:
+        for category in category_list:
+            print(f"  - ID: {category['id_categoria']}, Name: {category['nome_categoria']}")
 
-    # --- PASSO 3: TESTES DE PRODUTOS ---
-    print("\n--- Testando: adicionar_produto, listar_produtos e filtros ---")
-    # Adicionando produtos para as categorias 1, 2 e 3
-    adicionar_produto('Brinco_de_29.90', 29.90, 50, 1)
-    adicionar_produto('Colar_de_29.90', 29.90, 30, 2)
-    adicionar_produto('Tiara_de_10.00', 10.00, 10, 3)
+    # --- STEP 3: PRODUCT TESTS ---
+    print("\n--- Testing: add_product, list_products, and filters ---")
+    product1 = {'nome_produto': 'Brinco de Prata', 'preco': 35.50, 'quantidade_estoque': 50, 'id_categoria': 1}
+    product2 = {'nome_produto': 'Colar de Perolas', 'preco': 80.00, 'quantidade_estoque': 30, 'id_categoria': 2}
+    product3 = {'nome_produto': 'Tiara de Festa', 'preco': 22.00, 'quantidade_estoque': 15, 'id_categoria': 3}
+    add_product(product1)
+    add_product(product2)
+    add_product(product3)
     
-    print("\nListando todos os produtos (com JOIN):")
-    print(listar_produtos())
+    print("\nListing all products (with JOIN):")
+    product_list = list_products()
+    if product_list:
+        for product in product_list:
+            print(f"  - ID: {product['id_produto']}, Name: {product['nome_produto']}, Price: R${product['preco']:.2f}, Stock: {product['quantidade_estoque']}, Category: {product['nome_categoria']}")
 
-    print("\nListando apenas produtos da categoria 2 (Colares):")
-    print(listar_produtos_por_categoria(2))
+    # --- STEP 4: STOCK UPDATE TEST ---
+    print("\n--- Testing: update_product_stock ---")
+    print("Updating stock for product ID 1 to 48...")
+    update_product_stock(48, 1)
 
-    # --- PASSO 4: TESTE DE UPDATE ---
-    print("\n--- Testando: atualizar_estoque_produto ---")
-    print("Atualizando estoque do produto ID 1 para 45...")
-    atualizar_estoque_produto(1, 45)
-
-    # --- PASSO 5: O GRANDE TESTE DE VENDA ---
-    print("\n--- Testando: registrar_venda e listar_itens_por_venda ---")
-    # Carrinho: 2x Brincos de 29,90 (ID 1), 1x Tiara de 10.00 (ID 3)
-    carrinho = [(1, 2), (3, 1)] 
+    # --- STEP 5: SALE REGISTRATION TEST ---
+    print("\n--- Testing: register_sale and list_items_by_sale ---")
+    cart = [(1, 2), (3, 1)] # Stock for product 1 (Brinco) -> 46. product 3 (Tiara) -> 14.
     
-    novo_id_venda = registrar_venda(carrinho)
-    if novo_id_venda:
-        print(f"-> Venda {novo_id_venda} registrada com sucesso!")
-        print(f"-> Verificando itens da venda {novo_id_venda}:")
-        itens = listar_itens_por_venda(novo_id_venda)
-        print(itens)
+    new_sale_id = register_sale(cart)
+    if new_sale_id:
+        print(f"-> Sale {new_sale_id} registered successfully!")
+        print(f"-> Verifying items for sale {new_sale_id}:")
+        items = list_items_by_sale(new_sale_id)
+        if items:
+            for item in items:
+                print(f"  - Product: {item['nome_produto']}, Qty: {item['quantidade']}, Unit Price: R${item['preco_unitario']:.2f}")
     else:
-        print("-> Falha ao registrar venda.")
+        print("-> Failed to register sale.")
 
-    # --- PASSO 6: TESTES DE DELETE SEGURO ---
-    print("\n--- Testando: deletar_categoria (seguro) ---")
+    # --- STEP 6: SECURE CATEGORY DELETE TEST ---
+    print("\n--- Testing: delete_category (secure) ---")
+    print("\nAttempting to delete Category ID 3 (Tiaras) with correct password (should fail due to FK)...")
+    delete_category(3, ADMIN_PASSWORD)
     
-    # Teste 1: Senha incorreta
-    print("\nTentando deletar a categoria ID 3 (Tiaras) com a senha errada...")
-    id_para_deletar = 3
-    senha_errada = "senha-incorreta-123"
-    resultado_falha = deletar_categoria(id_para_deletar, senha_errada)
-    print(f"Resultado da operação (falha): {resultado_falha}")
-    print("Verificando se as categorias ainda estão intactas:")
-    print(listar_categorias())
+    # --- STEP 7: SECURE PRODUCT DELETE TEST ---
+    print("\n--- Testing: delete_product (secure) ---")
+    print("\nAttempting to delete Product ID 2 (Colar) with correct password...")
+    delete_product(2, ADMIN_PASSWORD)
+    print("Verifying if the product was removed:")
+    for product in list_products():
+        print(f"  - {product['nome_produto']}")
 
-    # Teste 2: Senha correta
-    print("\nTentando deletar a categoria ID 3 (Tiaras) com a senha CORRETA...")
-    resultado_sucesso = deletar_categoria(id_para_deletar, ADMIN_PASSWORD)
-    print(f"Resultado da operação (sucesso): {resultado_sucesso}")
-    print("Verificando se a categoria foi removida:")
-    print(listar_categorias())
+    # --- STEP 8: COMPLEX SALE DELETE TRANSACTION TEST ---
+    print("\n--- Testing: delete_sale with stock refund ---")
+    print("Attempting to delete Sale ID 1 with correct password...")
+    delete_sale(1, ADMIN_PASSWORD)
+    print("Verifying stock after delete (should be refunded):")
+    for product in list_products():
+        print(f"  - {product['nome_produto']}: Stock = {product['quantidade_estoque']}")
 
-    # --- PASSO 7: TESTES DE DELETE SEGURO DE PRODUTO ---
-    print("\n--- Testando: deletar_produto (seguro) ---")
 
-    print(listar_produtos())
+    # --- STEP 9: 'SUPER-FUNCTION' UPDATE_PRODUCT TEST ---
+    print("\n--- Testing: the super-function update_product ---")
+    update_product(1, ADMIN_PASSWORD, new_name="Brinco de Prata Esterlina", new_price=39.99)
     
-    # Teste 1: Senha incorreta
-    print("\nTentando deletar o produto ID 2 (Colar) com a senha errada...")
-    id_produto_para_deletar = 2
-    resultado_falha_produto = deletar_produto(id_produto_para_deletar, "senha-errada-999")
-    print(f"Resultado da operação (falha): {resultado_falha_produto}")
-    print("Verificando se a lista de produtos não foi alterada:")
-    # Imprime apenas os nomes para a lista ficar mais curta
-    print([produto[1] for produto in listar_produtos()]) 
+    print("\n--- Final Verification ---")
+    print("Final state of products after all updates:")
+    final_product_list = list_products()
+    if final_product_list:
+        for product in final_product_list:
+            print(f"  - ID: {product['id_produto']}, Name: {product['nome_produto']}, Price: R${product['preco']:.2f}, Stock: {product['quantidade_estoque']}, Category: {product['nome_categoria']}")
 
-    # Teste 2: Senha correta
-    print("\nTentando deletar o produto ID 2 (Colar) com a senha CORRETA...")
-    resultado_sucesso_produto = deletar_produto(id_produto_para_deletar, ADMIN_PASSWORD)
-    print(f"Resultado da operação (sucesso): {resultado_sucesso_produto}")
-    print("Verificando se o produto foi removido:")
-    # Imprime apenas os nomes para a lista ficar mais curta
-    print([produto[1] for produto in listar_produtos()])
-
-    # --- PASSO 8: TESTANDO A TRANSAÇÃO COMPLEXA DE DELETAR VENDA ---
-    print("\n--- Testando: deletar_venda com estorno de estoque ---")
-
-    # A venda que vamos deletar é a de ID 1.
-    # Itens: 2x Brinco (ID 1), 1x Tiara (ID 3)
-    # Estoque inicial: Brinco=50, Tiara=10.
-    # Após a venda: Brinco=48, Tiara=9.
-    # Após o delete: Brinco deve voltar para 50, Tiara para 10.
-    
-    id_venda_para_deletar = 1
-    
-    print("\nVerificando estoque ANTES do delete da venda:")
-    # Vamos pegar o estoque de todos os produtos para comparar
-    estoque_antes = {p[1]: p[3] for p in listar_produtos()}
-    print(estoque_antes)
-    
-    print(f"\nTentando deletar a Venda ID {id_venda_para_deletar} com a senha correta...")
-    resultado_delete_venda = deletar_venda(id_venda_para_deletar, ADMIN_PASSWORD)
-    print(f"Resultado da operação: {resultado_delete_venda}")
-    
-    print("\nVerificando se a venda foi removida:")
-    vendas_atuais = listar_vendas()
-    print(f"Vendas atuais no sistema: {vendas_atuais}")
-    if not any(v[0] == id_venda_para_deletar for v in vendas_atuais):
-        print(f"-> Sucesso! Venda {id_venda_para_deletar} não encontrada.")
-    else:
-        print(f"-> FALHA! Venda {id_venda_para_deletar} ainda existe.")
-
-    print("\nVerificando estoque DEPOIS do delete (esperamos o estorno):")
-    estoque_depois = {p[1]: p[3] for p in listar_produtos()}
-    print(estoque_depois)
-
-    # --- PASSO FINAL: TESTANDO A SUPER-FUNÇÃO ATUALIZAR_PRODUTO ---
-    print("\n--- Testando: a super-função atualizar_produto ---")
-    
-    id_alvo_brinco = 1 # Nosso alvo será o 'Brinco'
-    
-    print("\nEstado inicial dos produtos:")
-    print(listar_produtos())
-
-    # Cenário 1: Falha (senha errada)
-    print("\n1. Testando falha com senha errada...")
-    resultado_falha = atualizar_produto(id_alvo_brinco, "senha-ruim", novo_nome="NOME NAO DEVE MUDAR")
-    print(f"Resultado: {resultado_falha}")
-
-    # Cenário 2: Sucesso (só o nome)
-    print("\n2. Testando atualização apenas do NOME...")
-    resultado_nome = atualizar_produto(id_alvo_brinco, ADMIN_PASSWORD, novo_nome="Brinco de Prata")
-    print(f"Resultado: {resultado_nome}")
-
-    # Cenário 3: Sucesso (só o preço)
-    print("\n3. Testando atualização apenas do PREÇO...")
-    resultado_preco = atualizar_produto(id_alvo_brinco, ADMIN_PASSWORD, novo_preco=35.50)
-    print(f"Resultado: {resultado_preco}")
-    
-    # Cenário 4: Sucesso (nome e preço juntos)
-    print("\n4. Testando atualização de NOME e PREÇO simultaneamente...")
-    id_alvo_tiara = 3 # Agora vamos na Tiara
-    resultado_ambos = atualizar_produto(id_alvo_tiara, ADMIN_PASSWORD, novo_nome="Tiara de Festa", novo_preco=22.0)
-    print(f"Resultado: {resultado_ambos}")
-
-    print("\n--- Verificação Final ---")
-    print("Estado final dos produtos após todas as atualizações:")
-    print(listar_produtos())
-
-
-    print("\n--- TODOS OS TESTES (INCLUINDO DELETE) CONCLUÍDOS ---")
-
-    print("\n--- TODOS OS TESTES CONCLUÍDOS ---")
+    print("\n--- ALL TESTS COMPLETED ---")
