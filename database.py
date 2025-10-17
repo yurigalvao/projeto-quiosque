@@ -181,25 +181,11 @@ def add_multiple_products(product_list):
             sql_query = ("""
                 INSERT INTO produtos (nome_produto, preco, quantidade_estoque, id_categoria) VALUES (:nome_produto, :preco, :quantidade_estoque, :id_categoria)
             """)
-            # ▼▼▼ ADICIONE ESTE BLOCO DE DEPURAÇÃO AQUI ▼▼▼
-            print("\n--- [DEBUG DATABASE INTERNO] ---")
-            print("Nomes de produtos na tabela ANTES do executemany:")
-            for row in cursor.execute("SELECT nome_produto FROM produtos"):
-                print(f"  - {row[0]}")
-            print("--- [FIM DO DEBUG INTERNO] ---\n")
-            # ▲▲▲ FIM DO BLOCO DE DEPURAÇÃO ▲▲▲
             cursor.executemany(sql_query, product_list)
             connection.commit()
         return True
     except sqlite3.Error as e:
-        #print(f'Erro ao adicionar varios produtos: {e}')
-        # ▼▼▼ ADICIONE AS LINHAS DE DEPURAÇÃO AQUI ▼▼▼
-        print("\n--- [DEPURAÇÃO DATABASE] ---")
-        print("A função 'add_multiple_products' recebeu esta lista:")
-        print(product_list)
-        print(f"E falhou com o seguinte erro do SQLite: {e}")
-        print("--- [FIM DA DEPURAÇÃO] ---\n")
-        # ▲▲▲ FIM DAS LINHAS DE DEPURAÇÃO ▲▲▲
+        print(f'Erro ao adicionar varios produtos: {e}')
         return False
 
 def list_products():

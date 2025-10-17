@@ -130,7 +130,7 @@ def add_multiples_products(product_object_list):
             }
             product_data_list.append(product_data_dict)
 
-            success = db.add_multiple_products(product_data_list)
+        success = db.add_multiple_products(product_data_list)
         #print('n\[DEPURACAO] Lista de dicionarios sendo enviada para o DB: ')
         #print(product_data_list)
         return success
@@ -265,19 +265,6 @@ if __name__ == '__main__':
     print(f"--> Novo Nome: {produto_super_atualizado.name}, Novo Preço: {produto_super_atualizado.price}")
 
     print("\n" + "="*30)
-
-    # ▼▼▼ ADICIONE ESTE BLOCO ESPIÃO AQUI ▼▼▼
-    print("\n" + "="*30)
-    print("--- ESTADO DO BANCO ANTES DA INSERÇÃO EM LOTE ---")
-    print("Produtos atualmente no banco:")
-    produtos_atuais = get_all_products()
-    for p in produtos_atuais:
-        print(f"  - {p.name}")
-    print("="*48)
-    # ▲▲▲ FIM DO BLOCO ESPIÃO ▲▲▲
-
-    # --- Testando: add_multiple_products ---
-    # ... (o resto do seu teste continua aqui)
 
     # --- Teste add_multiple_products ---
     print("\n--- Testando: add_multiple_products ---")
