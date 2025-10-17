@@ -181,7 +181,7 @@ def list_products():
             connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
             cursor.execute("""
-                SELECT p.id_produto, p.nome_produto, p.preco, p.quantidade_estoque, c.nome_categoria FROM produtos AS p
+                SELECT p.id_produto, p.nome_produto, p.preco, p.quantidade_estoque, c.nome_categoria, c.id_categoria FROM produtos AS p
                 JOIN categorias AS c
                 ON p.id_categoria = c.id_categoria
             """)

@@ -7,6 +7,7 @@ class InsufficientStockError(Exception):
 @dataclass
 class Category:
     name: str
+    id: int = None
 
     def __str__(self):
         return f'{self.name}'
@@ -16,7 +17,7 @@ class Category:
 
 class Product:
     """ Representa um item específico e vendável do estoque."""
-    def __init__(self, name: str, price: float, category: Category, stock_quantity: int):
+    def __init__(self,  name: str, price: float, category: Category, stock_quantity: int, id:int = None):
         """
         Construtor da classe Produto.
 
@@ -30,6 +31,7 @@ class Product:
         self._price = price
         self._stock_quantity = stock_quantity
         self.category = category
+        self.id = id
 
     def remove_from_stock(self, quantity):
         if quantity <= self.stock_quantity:
