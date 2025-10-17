@@ -124,7 +124,7 @@ def delete_category(category_id, provided_password):
         print(f'Erro ao deletar cateoria: {e}')
         return False
         
-def update_category_name(new_name, category_id, provided_password):
+def update_category_name(category_id, new_name, provided_password):
     """Atualia o nome de uma categoria especifica"""
     if provided_password != ADMIN_PASSWORD:
         return False
@@ -142,7 +142,21 @@ def update_category_name(new_name, category_id, provided_password):
     except sqlite3.Error as e:
         print(f'Erro ao modificar nome da categoria: {e}')
         return False
-
+    
+def find_category_by_id(category_id):
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            connection.row_factory = sqlite3.Row
+            cursor = connection.cursor()
+            sql_query = f"""
+                SELECT * FROM categorias WHERE id_categoria = (?)
+            """
+            cursor.execute(sql_query, (category_id,))
+            result_query = cursor.fetchone()
+        return result_query
+    except sqlite3.Error as e:
+        print(f'Erro ao buscar categoria por id: {e}')
+        return None
 
 # FUnções crud para 'produtos'
 def add_product(product_data):
@@ -167,11 +181,25 @@ def add_multiple_products(product_list):
             sql_query = ("""
                 INSERT INTO produtos (nome_produto, preco, quantidade_estoque, id_categoria) VALUES (:nome_produto, :preco, :quantidade_estoque, :id_categoria)
             """)
+            # ▼▼▼ ADICIONE ESTE BLOCO DE DEPURAÇÃO AQUI ▼▼▼
+            print("\n--- [DEBUG DATABASE INTERNO] ---")
+            print("Nomes de produtos na tabela ANTES do executemany:")
+            for row in cursor.execute("SELECT nome_produto FROM produtos"):
+                print(f"  - {row[0]}")
+            print("--- [FIM DO DEBUG INTERNO] ---\n")
+            # ▲▲▲ FIM DO BLOCO DE DEPURAÇÃO ▲▲▲
             cursor.executemany(sql_query, product_list)
             connection.commit()
         return True
     except sqlite3.Error as e:
-        print(f'Erro ao adicionar varios produtos: {e}')
+        #print(f'Erro ao adicionar varios produtos: {e}')
+        # ▼▼▼ ADICIONE AS LINHAS DE DEPURAÇÃO AQUI ▼▼▼
+        print("\n--- [DEPURAÇÃO DATABASE] ---")
+        print("A função 'add_multiple_products' recebeu esta lista:")
+        print(product_list)
+        print(f"E falhou com o seguinte erro do SQLite: {e}")
+        print("--- [FIM DA DEPURAÇÃO] ---\n")
+        # ▲▲▲ FIM DAS LINHAS DE DEPURAÇÃO ▲▲▲
         return False
 
 def list_products():
@@ -206,7 +234,7 @@ def list_products_by_category(category_id):
         print(f'Erro ao listar produtos: {e}')
         return []
 
-def update_product_stock(new_quantity, product_id):
+def update_product_stock(product_id, new_quantity):
     """Atualiza o estoque de um produto especifico"""
     try:
         with sqlite3.connect(DB_FILE) as connection:
@@ -267,6 +295,23 @@ def delete_product(product_id, provided_password):
     except sqlite3.Error as e:
         print(f'Erro ao deletar produto: {e}')
         return False
+
+def find_product_by_id(product_id):
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            connection.row_factory = sqlite3.Row
+            cursor = connection.cursor()
+            sql_query = ("""
+                SELECT p.*, c.nome_categoria FROM produtos AS p JOIN
+                categorias AS c ON p.id_categoria = c.id_categoria
+                WHERE p.id_produto = (?)
+            """)
+            cursor.execute(sql_query, (product_id,))
+            result = cursor.fetchone()
+        return result
+    except sqlite3.Error as e:
+        print(f'Nao foi possivel procurar produtos pelo id: {e}')
+        return None
 
 # Funções de crud para vendas
 def register_sale(items):
