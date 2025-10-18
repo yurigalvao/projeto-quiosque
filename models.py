@@ -97,18 +97,16 @@ class SaleItem:
 
 class Sale:
     """Representa uma transação completa, contendo um ou mais itens."""
-    def __init__(self):
+    def __init__(self, id=None, date_hour=None, total_value=0.0):
         """
-        Contrutor da classe Venda. Inicia um 'carrinho de compras' novo.
+        Construtor da classe Venda.
+        Pode criar uma venda nova ou representar uma existente do banco.
         """
-        # Registra o momento exato em que a venda foi criada
-        self.date_hour = datetime.now()
-
-        # A lista de itens começa vazia. Ela guardará objetos da classe ItemVenda.
+        self.id = id
+        # Se nenhuma data for passada, usa a data atual. Senão, usa a data do banco.
+        self.date_hour = date_hour if date_hour is not None else datetime.now()
         self.items = []
-
-        # O valor total da venda começa, logicamente, em zero.
-        self.total_value = 0.0
+        self.total_value = total_value
 
     def add_item(self, product: Product, quantity: int):
         """

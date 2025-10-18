@@ -1,39 +1,71 @@
-#  kiosk-manager (Sistema de Gestão para Quiosque)
+# Kiosk Manager - Sistema de Gestão para Quiosque
 
 ## 🎯 Objetivo
 
-Desenvolver um sistema de gestão simples e funcional para pequenos comércios, como quiosques, utilizando Python e os princípios da Programação Orientada a Objetos. O objetivo é criar uma ferramenta para controle de produtos, estoque e vendas.
+Desenvolver um sistema de gestão completo e robusto para pequenos comércios, como quiosques, utilizando Python. O objetivo é criar uma ferramenta para controle de produtos, categorias, estoque e registro de vendas, com uma arquitetura profissional e escalável.
 
-## ✨ Status do MVP V1.0 (Lógica Implementada)
+---
 
-A lógica central do sistema foi modelada e implementada, aplicando conceitos avançados de POO.
+## ✨ Status Atual: Backend V2.0 - Funcionalidades Concluídas
 
--   [x] **Gestão de Produtos:**
-    -   [x] Modelagem de **Categorias** de produtos.
-    -   [x] Modelagem de **Produtos** com nome, preço, estoque e categoria associada, incluindo validações.
--   [x] **Gestão de Vendas:**
-    -   [x] Registro de **Vendas** com múltiplos itens por transação.
-    -   [x] Lógica para **atualização automática do estoque** ao finalizar uma venda.
--   [x] **Robustez do Sistema:**
-    -   [x] Implementação de **Exceções Customizadas** para tratamento de erros (ex: `EstoqueInsuficienteError`).
+A fundação do sistema (backend) está 100% funcional, implementada e testada, pronta para ser conectada a uma interface de usuário.
 
-## 🛠️ Conceitos e Tecnologias Aplicadas
+### Funcionalidades Implementadas:
+- [x] **Gestão de Categorias:** CRUD completo (Criar, Listar, Atualizar, Deletar).
+- [x] **Gestão de Produtos:** CRUD completo, incluindo uma "super-função" para atualizações flexíveis de nome e preço.
+- [x] **Gestão de Vendas:**
+    - [x] Registro de vendas complexas com múltiplos itens.
+    - [x] **Controle de Estoque Ativo:** Baixa automática no estoque ao vender.
+    - [x] Cancelamento de vendas com **estorno** automático de estoque.
+- [x] **Segurança:** Operações críticas de "Gerente" (deletar, alterar preços) protegidas por senha.
+- [x] **Integridade de Dados:** Validação de estoque e uso de `FOREIGN KEY`s para garantir a consistência do banco de dados.
+
+---
+
+## 🏗️ Arquitetura
+
+O backend foi construído seguindo um padrão de arquitetura em **3 camadas** para garantir organização, flexibilidade e manutenibilidade.
+
+**`Interface (Futuro Django)` <--> `repository.py` <--> `database.py`**
+
+* **`models.py` (As "Plantas de Engenharia"):** Define as classes de negócio (`Product`, `Category`, `Sale`) com suas regras e comportamentos, usando princípios de Programação Orientada a Objetos.
+
+* **`database.py` (O "Armazém de Peças"):** A camada de mais baixo nível. É o **único** arquivo que se comunica diretamente com o banco de dados SQLite3. Ele é responsável por executar os comandos SQL e lidar com a conexão, trabalhando apenas com dados brutos.
+
+* **`repository.py` (A "Fábrica"):** A camada intermediária e a **única porta de entrada** para a interface. Ele age como um "tradutor", convertendo os objetos do `models.py` em dados brutos para o `database.py` (operações de escrita) e convertendo os dados brutos do `database.py` em objetos para a interface (operações de leitura).
+
+---
+
+## 🛠️ Tecnologias e Conceitos Aplicados
 
 -   **Linguagem:** Python 3
--   **Paradigma Principal:** Programação Orientada a Objetos (POO)
--   **Conceitos Chave Utilizados:**
-    -   `@dataclasses` para classes de dados limpas e eficientes.
-    -   Encapsulamento com `@property` e `@setter` para validações de dados.
-    -   Composição para modelar a relação entre `Venda` e `ItemVenda`.
-    -   Dunder Methods como `__str__` e `__repr__` para representação de objetos.
-    -   Tratamento de Erros com Exceções Customizadas (`try...except`, `raise`).
+-   **Banco de Dados:** SQLite3
+-   **Princípios:** Programação Orientada a Objetos (POO), Arquitetura em Camadas (Repository Pattern), Separação de Responsabilidades (SoC).
+-   **Bibliotecas:** `python-dotenv` para gerenciamento de segredos.
+
+---
+
+## 🧪 Como Executar a Suíte de Testes
+
+O projeto possui uma suíte de testes integrada que valida toda a funcionalidade do backend.
+
+1.  Clone o repositório.
+2.  Crie e ative um ambiente virtual (`venv`).
+3.  Instale as dependências: `pip install python-dotenv`.
+4.  Crie um arquivo `.env` na raiz do projeto e defina a `ADMIN_PASSWORD`.
+5.  Execute o arquivo `repository.py` para rodar os testes de integração:
+    ```bash
+    python3 repository.py
+    ```
+A saída do terminal demonstrará o ciclo de vida completo das operações para todas as entidades.
+
+---
 
 ## 🗺️ Próximos Passos
 
--   [ ] **Profissionalização:** Refatoração completa do código para o Inglês, seguindo as melhores práticas da indústria.
--   [ ] **Persistência de Dados:** Integração com um banco de dados (provavelmente SQLite ou MySQL) para armazenar produtos, vendas e estoque.
--   [ ] **Interface com o Usuário:** Desenvolvimento de uma Interface de Linha de Comando (CLI) para permitir a interação com o sistema.
+Com a arquitetura de backend definida e as funcionalidades do MVP implementadas, os próximos grandes passos para a evolução do projeto são:
 
-## 🚀 Como Executar (Instruções Futuras)
-
-*(Esta seção será preenchida no futuro com as instruções de como instalar e rodar o projeto.)*
+- [ ] **Desenvolvimento de Novas Features de Negócio:**
+    - [ ] Implementar um sistema de **Relatórios** de vendas (diários, semanais, mensais).
+    - [ ] Implementar a funcionalidade de **Abertura e Fechamento de Caixa**.
+- [ ] **Fase 3 - Interface com Django:** Iniciar os estudos e o desenvolvimento da interface web para o sistema.

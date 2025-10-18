@@ -16,7 +16,7 @@ DB_FILE = 'quiosque.db'
 
 def create_tables():
     """
-    FUnção para criar as tabelas iniciais do banco de dados,
+    Função para criar as tabelas iniciais do banco de dados,
     caso elas ainda não existam 
     """
     print('Verificando e criando tabelas, se necessario...')
@@ -76,7 +76,15 @@ def create_tables():
 
 
 def add_category(category_name):
-    """Adiciona uma nova categoria ao banco de dados"""
+    """
+    Adiciona uma nova categoria à tabela 'categorias'.
+
+    Args:
+        category_name (str): O nome da categoria a ser adicionada.
+
+    Returns:
+        bool: True se a inserção for bem-sucedida, False caso contrário.
+    """
     try:
         with sqlite3.connect(DB_FILE) as connection:
             cursor = connection.cursor()
@@ -91,7 +99,13 @@ def add_category(category_name):
 
 
 def list_categories():
-    """Retorna uma lista de todas as categorias cadastradas"""
+    """
+    Retorna uma lista de todas as categorias cadastradas.
+
+    Returns:
+        list: Uma lista de objetos sqlite3.Row, onde cada objeto representa uma categoria.
+            Retorna uma lista vazia em caso de erro.
+    """
     try:
         with sqlite3.connect(DB_FILE) as connection:
             connection.row_factory = sqlite3.Row
@@ -106,6 +120,17 @@ def list_categories():
         return []
 
 def delete_category(category_id, provided_password):
+    """
+    Deleta uma categoria do banco de dados após validar a senha.
+    A operação falhará se a categoria ainda estiver em uso por algum produto.
+
+    Args:
+        category_id (int): O ID da categoria a ser deletada.
+        provided_password (str): A senha de administrador para autorizar a operação.
+
+    Returns:
+        bool: True se a deleção for bem-sucedida, False caso contrário.
+    """
     if provided_password != ADMIN_PASSWORD:
         return False
     try:
@@ -125,7 +150,17 @@ def delete_category(category_id, provided_password):
         return False
         
 def update_category_name(category_id, new_name, provided_password):
-    """Atualia o nome de uma categoria especifica"""
+    """
+    Atualiza o nome de uma categoria específica após validar a senha.
+
+    Args:
+        category_id (int): O ID da categoria a ser atualizada.
+        new_name (str): O novo nome para a categoria.
+        provided_password (str): A senha de administrador para autorizar a operação.
+
+    Returns:
+        bool: True se a atualização for bem-sucedida, False caso contrário.
+    """
     if provided_password != ADMIN_PASSWORD:
         return False
     
@@ -144,6 +179,15 @@ def update_category_name(category_id, new_name, provided_password):
         return False
     
 def find_category_by_id(category_id):
+    """
+    Busca uma única categoria pelo seu ID.
+
+    Args:
+        category_id (int): O ID da categoria a ser procurada.
+
+    Returns:
+        sqlite3.Row or None: Um objeto Row com os dados da categoria se encontrada, senão None.
+    """
     try:
         with sqlite3.connect(DB_FILE) as connection:
             connection.row_factory = sqlite3.Row
@@ -158,9 +202,18 @@ def find_category_by_id(category_id):
         print(f'Erro ao buscar categoria por id: {e}')
         return None
 
-# FUnções crud para 'produtos'
+# Fnções crud para 'produtos'
 def add_product(product_data):
-    """Adiciona um novo produto ao banco de dados"""
+    """
+    Adiciona um novo produto ao banco de dados a partir de um dicionário.
+
+    Args:
+        product_data (dict): Um dicionário contendo os dados do produto com as chaves
+                            'nome_produto', 'preco', 'quantidade_estoque', 'id_categoria'.
+
+    Returns:
+        bool: True se a inserção for bem-sucedida, False caso contrário.
+    """
     try:
         with sqlite3.connect(DB_FILE) as connection:
             cursor = connection.cursor()
@@ -175,6 +228,15 @@ def add_product(product_data):
         return False
     
 def add_multiple_products(product_list):
+    """
+    Adiciona uma lista de novos produtos ao banco de dados de uma só vez.
+
+    Args:
+        product_list (list): Uma lista de dicionários, onde cada dicionário representa um produto.
+
+    Returns:
+        bool: True se a inserção for bem-sucedida, False caso contrário.
+    """
     try:
         with sqlite3.connect(DB_FILE) as connection:
             cursor = connection.cursor()
@@ -189,7 +251,13 @@ def add_multiple_products(product_list):
         return False
 
 def list_products():
-    """Retorna uma lista de todos os produtos com o nome da categoria (usando JOIN)"""
+    """
+    Retorna uma lista de todos os produtos com o nome da categoria correspondente.
+
+    Returns:
+        list: Uma lista de objetos sqlite3.Row com dados dos produtos e categorias.
+            Retorna uma lista vazia em caso de erro.
+    """
     try:
         with sqlite3.connect(DB_FILE) as connection:
             connection.row_factory = sqlite3.Row
@@ -206,6 +274,16 @@ def list_products():
         return []
         
 def list_products_by_category(category_id):
+    """
+    Retorna uma lista de produtos de uma categoria específica.
+
+    Args:
+        category_id (int): O ID da categoria para filtrar os produtos.
+
+    Returns:
+        list: Uma lista de objetos sqlite3.Row com os produtos da categoria.
+            Retorna uma lista vazia em caso de erro.
+    """
     try:
         with sqlite3.connect(DB_FILE) as connection:
             connection.row_factory = sqlite3.Row
@@ -221,7 +299,16 @@ def list_products_by_category(category_id):
         return []
 
 def update_product_stock(product_id, new_quantity):
-    """Atualiza o estoque de um produto especifico"""
+    """
+    Atualiza a quantidade em estoque de um produto específico.
+
+    Args:
+        product_id (int): O ID do produto a ser atualizado.
+        new_quantity (int): A nova quantidade total em estoque.
+
+    Returns:
+        bool: True se a atualização for bem-sucedida, False caso contrário.
+    """
     try:
         with sqlite3.connect(DB_FILE) as connection:
             cursor = connection.cursor()
@@ -237,6 +324,18 @@ def update_product_stock(product_id, new_quantity):
         return False
 
 def update_product(product_id, provided_password, new_name=None, new_price=None):
+    """
+    Atualiza o nome e/ou o preço de um produto de forma flexível após validar a senha.
+
+    Args:
+        product_id (int): O ID do produto a ser atualizado.
+        provided_password (str): A senha de administrador.
+        new_name (str, optional): O novo nome do produto. Defaults to None.
+        new_price (float, optional): O novo preço do produto. Defaults to None.
+
+    Returns:
+        bool: True se a atualização for bem-sucedida, False caso contrário.
+    """
     if provided_password != ADMIN_PASSWORD:
         return False
     try:
@@ -264,6 +363,16 @@ def update_product(product_id, provided_password, new_name=None, new_price=None)
 
 
 def delete_product(product_id, provided_password):
+    """
+    Deleta um produto do banco de dados após validar a senha.
+
+    Args:
+        product_id (int): O ID do produto a ser deletado.
+        provided_password (str): A senha de administrador.
+
+    Returns:
+        bool: True se a deleção for bem-sucedida, False caso contrário.
+    """
     if provided_password != ADMIN_PASSWORD:
         return False
     try:
@@ -283,6 +392,15 @@ def delete_product(product_id, provided_password):
         return False
 
 def find_product_by_id(product_id):
+    """
+    Busca um único produto pelo seu ID, incluindo o nome da categoria.
+
+    Args:
+        product_id (int): O ID do produto a ser procurado.
+
+    Returns:
+        sqlite3.Row or None: Um objeto Row com os dados do produto se encontrado, senão None.
+    """
     try:
         with sqlite3.connect(DB_FILE) as connection:
             connection.row_factory = sqlite3.Row
@@ -302,8 +420,14 @@ def find_product_by_id(product_id):
 # Funções de crud para vendas
 def register_sale(items):
     """
-    Registra uma nova venda na tabela vendas e seus respectivos
-    itens na tabela itens_da_venda, itens deve ser uma lista
+    Registra uma venda completa, incluindo itens, e atualiza o estoque dos produtos.
+    A operação é uma transação: ou tudo funciona, ou nada é salvo.
+
+    Args:
+        items (list): Uma lista de tuplas, onde cada tupla contém (id_produto, quantidade).
+
+    Returns:
+        int or bool: O ID da nova venda se for bem-sucedida, senão False.
     """
     total_price = 0
     items_to_register = []
@@ -312,6 +436,7 @@ def register_sale(items):
     try:
         with sqlite3.connect(DB_FILE) as connection:
             cursor = connection.cursor()
+            # Validação de estoque e cálculo do preço total
             for (product_id, quantity) in items:
                 cursor.execute("""
                     SELECT preco, quantidade_estoque FROM produtos WHERE id_produto = (?)
@@ -356,6 +481,16 @@ def register_sale(items):
         return False
 
 def list_sales_by_date(date_str):
+    """
+    Retorna uma lista com o resumo de todas as vendas de uma data específica.
+
+    Args:
+        date_str (str): A data no formato 'YYYY-MM-DD'.
+
+    Returns:
+        list: Uma lista de objetos sqlite3.Row com os dados das vendas encontradas.
+            Retorna uma lista vazia em caso de erro.
+    """
     try:
         with sqlite3.connect(DB_FILE) as connection:
             connection.row_factory = sqlite3.Row
@@ -370,6 +505,13 @@ def list_sales_by_date(date_str):
         return []
 
 def list_sales():
+    """
+    Retorna uma lista com o resumo de todas as vendas.
+
+    Returns:
+        list: Uma lista de objetos sqlite3.Row com os dados de todas as vendas.
+            Retorna uma lista vazia em caso de erro.
+    """
     try:
         with sqlite3.connect(DB_FILE) as connection:
             connection.row_factory = sqlite3.Row
@@ -384,12 +526,22 @@ def list_sales():
         return []
 
 def list_items_by_sale(sale_id):
+    """
+    Retorna uma lista com todos os itens de uma venda específica.
+
+    Args:
+        sale_id (int): O ID da venda para buscar os itens.
+
+    Returns:
+        list: Uma lista de objetos sqlite3.Row com os dados dos itens da venda.
+            Retorna uma lista vazia em caso de erro.
+    """
     try:
         with sqlite3.connect(DB_FILE) as connection:
             connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
             cursor.execute("""
-                SELECT p.nome_produto, iv.quantidade, iv.preco_unitario FROM itens_da_venda as iv
+                SELECT iv.id_produto, p.nome_produto, iv.quantidade, iv.preco_unitario FROM itens_da_venda as iv
                 JOIN produtos as p
                 ON iv.id_produto = p.id_produto
                 WHERE iv.id_venda = (?)
@@ -399,8 +551,45 @@ def list_items_by_sale(sale_id):
     except sqlite3.Error as e:
         print(f'Erro ao listar produtos pelo id venda: {e}')
         return []
+    
+def find_sale_by_id(sale_id):
+    """
+
+    Busca uma única venda pelo seu ID.
+
+    Args:
+        sale_id (int): O ID da venda a ser procurada.
+
+    Returns:
+        sqlite3.Row or None: Um objeto Row com os dados da venda se encontrada, senão None.
+    """
+    try:
+        with sqlite3.connect(DB_FILE) as connection:
+            connection.row_factory = sqlite3.Row
+            cursor = connection.cursor()
+            sql_query = ("""
+                SELECT id_venda, data_hora, valor_total FROM vendas
+                WHERE id_venda = (?)
+            """)
+            cursor.execute(sql_query, (sale_id,))
+            sql_result = cursor.fetchone()
+        return sql_result
+    except sqlite3.Error as e:
+        print(f'Erro ao procurar venda pelo id: {e}')
+        return None
 
 def delete_sale(sale_id, provided_password):
+    """
+    Deleta uma venda e realiza o estorno (devolução) dos itens ao estoque.
+    A operação é uma transação: ou tudo funciona, ou nada é alterado.
+
+    Args:
+        sale_id (int): O ID da venda a ser deletada.
+        provided_password (str): A senha de administrador.
+
+    Returns:
+        bool: True se a deleção e o estorno forem bem-sucedidos, False caso contrário.
+    """
     if provided_password != ADMIN_PASSWORD:
         return False
     try:
